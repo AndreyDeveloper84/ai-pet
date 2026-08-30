@@ -30,6 +30,7 @@
 | DA-4 | Low-fi onboarding `O01→O02→O03→O04→H01` (актуальный) | `low-fi/` — EXPECTED / NOT MATERIALIZED | TEST_CANDIDATE (по описанию владельца) | Linear PET-2; `docs/02-ux/onboarding.md` | Исходник не в workspace; фактический кандидат — DA-5 |
 | DA-5 | Clickable low-fi prototype onboarding (HTML) | `../prototypes/onboarding-low-fi/` | TEST_CANDIDATE | Linear PET-2; `ux-test-script-v1.md` | Фактический артефакт теста |
 | DA-6 | Clickable low-fi prototype Grooming Care Loop (HTML) | `../prototypes/grooming-loop-low-fi/` | TEST_CANDIDATE | Linear PET-3; `ux-test-script-grooming-v1.md` | Фактический артефакт теста |
+| DA-7 | Clickable low-fi prototype Veterinary Care Loop (HTML) | `../prototypes/veterinary-loop-low-fi/` | TEST_CANDIDATE | Linear PET-4; `ux-test-script-veterinary-v1.md` | Фактический артефакт теста; safety copy — DRAFT COPY |
 
 ## Ожидается от владельца
 

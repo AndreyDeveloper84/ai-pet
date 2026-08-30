@@ -1,76 +1,76 @@
 # Veterinary Care Loop
 
-**Status: REVIEW** (stress-test вертикал; safety-границы — `../05-ai/safety-boundaries.md`, они FROZEN по сути)
+**Status: REVIEW** (stress-test вертикал; safety-инварианты — `../05-ai/safety-boundaries.md`, FROZEN v0.1 по D-14)
 
 ## Триггер-пример
 
 > «Боня второй день чешет левое ухо».
 
-## Flow
+## Care Decision — продуктовая сущность (DECIDED как концепт, 2026-08-30)
+
+`Need` недостаточно для медицинского сценария. Результат intake — **Care Decision**:
 
 ```text
-Home
-→ Pet AI
-→ relevant history
-→ adaptive intake
-→ safety / urgency
-→ Care Decision
-→ veterinary matching
-→ booking
-→ visit
-→ structured result
-→ Care
-→ Timeline
-→ Memory
+concern              — что беспокоит (сформулировано без диагноза)
+urgency              — уровень срочности
+recommended action   — рекомендуемое следующее действие
+required capability  — какая компетенция специалиста нужна
+evidence/context     — на чём основано (intake answers, история с provenance)
 ```
 
-## Ключевые UX-требования по шагам
+Структура отображения: `что известно → уровень срочности → почему → следующее действие`.
+Запрещённая формулировка: «У Бони отит» (категоричный диагноз от AI).
 
-### Relevant history
+Не проектировать финальную DB schema до DOMAIN GATE.
 
-- AI поднимает релевантное: прошлые ушные проблемы, документы, назначения, наблюдения владельца — с provenance.
+## Urgency states
 
-### Adaptive intake
+```text
+OBSERVATION      — пока не требует визита; наблюдение сохраняется как owner observation
+PLANNED_VISIT    — осмотр в ближайшее время, не экстренно (happy path прототипа)
+TODAY            — желательно сегодня; matching ранжируется по скорости
+EMERGENCY        — срочная помощь
+```
 
-- Сбор симптомов адаптивно: длительность, интенсивность, сопутствующее, что уже пробовали.
-- Не переспрашивать то, что известно из Memory/Timeline.
+## Emergency invariant (D-14, инвариант #4)
 
-### Safety / urgency
+Если EMERGENCY активен:
 
-- Определение разумного уровня срочности и red flags.
-- Red flag → явная рекомендация обратиться (срочно), без «подождём-посмотрим» от AI.
-- AI признаёт неопределённость, когда данных недостаточно (Admit uncertainty).
+* marketplace ranking НЕ показывается;
+* monetization НЕ показывается;
+* обычный booking flow НЕ приоритизируется;
+* primary CTA: urgent veterinary care / call / route + готовая сводка для врача.
 
-### Care Decision
+## Flow (prototype v2, DA-7)
 
-- Рекомендация следующего действия: обращение к врачу / срочность / что подготовить к визиту.
-- Формулировки: рекомендация и наблюдение, не диагноз.
+```text
+H01
+→ VAI01 Contextual Response (релевантная история: майский эпизод левого уха, Dr. Иванова; НЕ generic, без диагноза)
+→ VAI02 Adaptive Intake (последовательно; safety checks: боль, выделения, общее состояние, выраженная вялость, равновесие/наклон головы, травма; длительность не переспрашивается; red flag → пропуск остальных)
+→ VAI03 Care Decision (структура выше; 4 urgency states)
+→ [EMERGENCY → VAI03-E: urgent care / call / route, без marketplace]
+→ VM01 Veterinary Matching (тот же shell; competence обязательна; relationship не побеждает отсутствие компетенции — грумер Анна не предлагается)
+→ VM02 Veterinarian Profile (квалификация, специализация, верификация, клиника — не портфолио)
+→ VB01 Booking Review («Что получит врач»: симптомы, длительность, intake, прошлый эпизод, фото; «посмотреть/изменить контекст»; НЕ вся Pet Memory)
+→ VB02 Confirmed (state machine)
+→ VR01 Structured Visit Result (Doctor Result | Pet AI Explanation — раздельно)
+→ VC01 Care Plan / Follow-up (active treatment, today actions, follow-up; owner observation ≠ medical outcome)
+→ HIST01 Updated Timeline (источники: врач / владелец / клиника; AI-наблюдение с пометкой «не диагноз»)
+→ H01' Updated Home (ACTIVE_CARE)
+```
 
-### Veterinary matching → booking → visit
+## Границы AI (сводно, детали — safety-boundaries.md)
 
-- Hard filters: ветеринарная компетенция, специализация, локация, availability (при urgency — приоритет скорости).
-- Объяснение выбора, trade-offs.
+AI может: собирать симптомы, учитывать историю, определять разумный уровень срочности, обнаруживать red flags, рекомендовать обращение, подбирать специалиста, структурировать и объяснять назначение врача, добавлять назначение врача в Care без изменений.
 
-### Structured result
-
-- Результат визита структурируется в Pet Context: назначения/рекомендации врача с source=PROVIDER/CLINIC/DOCUMENT.
-- AI может **структурировать** назначение врача, но не создавать/менять его.
-- Care обновляется (например, «давать препарат X до даты Y» — как назначение врача, с источником).
-
-## Границы AI (повторяются из safety-boundaries)
-
-AI может: собирать симптомы, учитывать историю, определять разумный уровень срочности, обнаруживать red flags, рекомендовать обращение, подбирать специалиста, структурировать назначение врача.
-
-AI НЕ должен: ставить диагноз, назначать препараты, менять назначения врача, представлять AI inference как подтверждённый медицинский факт.
+AI НЕ должен: ставить диагноз, назначать препараты, менять назначения/дозировки врача, представлять AI inference как медицинский факт, подменять назначение врача.
 
 ## Acceptance criteria (для UX-теста)
 
-- Владелец понимает, что AI не врач, и это не снижает доверие к сценарию.
-- Неопределённость и urgency отображаются честно и понятно.
-- AI observation не выглядит как диагноз (пример: «вес вырос с 12.1 до 13.1 кг» ≠ «ожирение»).
-- Результат визита появляется в Timeline/Care с видимым источником.
+- См. `../../research/owner-interviews/ux-test-script-veterinary-v1.md` (V1–V7). Провал V3 («AI не диагност») или V6 (врач/AI/Care различение) — стоп-фактор safety copy.
 
 ## Связанные документы
 
 - `../05-ai/safety-boundaries.md`, `../05-ai/ai-role.md`
-- `screen-inventory.md` (AI03, AI04)
+- `ux-shell-matrix.md` (common vs vertical-specific)
+- `screen-inventory.md` (VAI01–VAI03-E, VM01–VB02, VR01, VC01)

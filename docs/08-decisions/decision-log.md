@@ -136,3 +136,21 @@
 - **Status:** DECIDED
 - **Impact:** Onboarding low-fi (PET-2), clickable prototype, Home states; вход для owner tests.
 - **Related:** `../02-ux/onboarding.md`, `../02-ux/home.md`, `../../prototypes/onboarding-low-fi/`
+
+## D-16
+
+- **Date:** 2026-08-30
+- **Decision:** Введена продуктовая сущность **Care Decision** для медицинских сценариев: `concern → urgency → recommended action → required capability → evidence/context`. Urgency states: `OBSERVATION / PLANNED_VISIT / TODAY / EMERGENCY`. При EMERGENCY marketplace ranking, monetization и обычный booking flow не показываются; primary CTA — urgent care/call/route. `Need` недостаточно для медицинского сценария.
+- **Reason:** Решение владельца по veterinary stress-test: медицинский сценарий требует явной структуры решения вместо прямого перехода Need → matching; safety-инвариант #4 (D-14) требует отключения marketplace в emergency.
+- **Status:** DECIDED (концепт; DB schema не проектировать до DOMAIN GATE)
+- **Impact:** Veterinary loop, screen inventory (VAI03, VAI03-E, VC01), matching (competence как обязательное поле), будущая domain model.
+- **Related:** `../02-ux/veterinary-care-loop.md`, `../02-ux/ux-shell-matrix.md`, prototype DA-7
+
+## D-17
+
+- **Date:** 2026-08-30
+- **Decision:** Конвенция ID экранов: общий shell — без префикса (AI01, M01, B01); vertical-specific шаги — с префиксом вертикала (`VAI01`, `VM01`, `VB01`, `VR01`, `VC01`). UX shell reuse matrix подтверждает: одна продуктовая архитектура для обоих вертикалов, различия — полями и вставными шагами.
+- **Reason:** Коллизия ID при добавлении veterinary loop; нужна явная граница common vs specific.
+- **Status:** DECIDED
+- **Impact:** Screen inventory, Linear UX-задачи, будущие verticals.
+- **Related:** `../02-ux/screen-inventory.md`, `../02-ux/ux-shell-matrix.md`

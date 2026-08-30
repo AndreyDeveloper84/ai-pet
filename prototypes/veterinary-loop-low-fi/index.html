@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pet AI — Veterinary Care Loop · low-fi · TEST_CANDIDATE</title>
+<!--
+  Pet AI — throwaway clickable low-fi prototype: Veterinary Care Loop (stress-test).
+  Статус: TEST_CANDIDATE (D-13). НЕ production code. Все safety-тексты — DRAFT COPY до owner tests.
+  Сценарий: «Боня второй день чешет левое ухо». История: похожий эпизод с ЛЕВЫМ ухом в мае,
+  завершился после визита и лечения; активного лечения сейчас нет.
+  Flow: H01 → VAI01 → VAI02 (sequential adaptive intake) → VAI03 (Care Decision)
+        → [VAI03-E emergency | VM01 → VM02 → VB01 → VB02 → VR01 → VC01 → HIST01 → H01']
+  Safety-инварианты (FROZEN v0.1, D-14): AI не диагностирует/не назначает; AI observation ≠ факт;
+  emergency приоритетнее marketplace (экран VAI03-E без matching/booking CTA);
+  provenance для мед. утверждений; uncertainty явно.
+  Urgency states: OBSERVATION / PLANNED_VISIT / TODAY / EMERGENCY.
+-->
+<style>
+  :root { --ink:#222; --gray:#777; --line:#bbb; --bg:#f2f2f2; --warn:#8a2a00; --ok:#1a5a1a; }
+  * { box-sizing:border-box; margin:0; padding:0; font-family:-apple-system,"Segoe UI",Roboto,sans-serif; }
+  body { background:#ddd; display:flex; justify-content:center; padding:24px; }
+  .phone { width:375px; min-height:720px; background:var(--bg); border:2px solid var(--ink); border-radius:24px; overflow:hidden; position:relative; }
+  .screen { display:none; padding:24px 20px 40px; min-height:720px; }
+  .screen.active { display:block; }
+  .tag { font-size:11px; color:var(--gray); letter-spacing:.08em; text-transform:uppercase; margin-bottom:12px; }
+  h1 { font-size:21px; margin-bottom:10px; }
+  p.sub { color:var(--gray); font-size:13px; line-height:1.5; margin-bottom:18px; }
+  .btn { display:block; width:100%; padding:14px; margin-top:12px; border:2px solid var(--ink); background:var(--ink); color:#fff; font-size:15px; border-radius:10px; cursor:pointer; text-align:center; }
+  .btn.ghost { background:transparent; color:var(--ink); }
+  .btn.link { border:none; background:none; color:var(--gray); text-decoration:underline; font-size:13px; }
+  .btn.warn { border-color:var(--warn); background:var(--warn); }
+  .card { background:#fff; border:1.5px solid var(--line); border-radius:12px; padding:14px; margin-bottom:12px; }
+  .card h3 { font-size:15px; margin-bottom:6px; }
+  .card p { font-size:13px; line-height:1.45; }
+  .card.clickable { cursor:pointer; }
+  .card.clickable:hover { border-color:var(--ink); }
+  .src { display:inline-block; font-size:11px; color:var(--gray); border:1px solid var(--line); border-radius:6px; padding:2px 6px; margin-top:8px; margin-right:4px; }
+  .src.unc { color:#8a5a00; border-style:dashed; }
+  .src.prov { color:var(--ok); }
+  .src.ai { color:#4a4a8a; border-style:dotted; }
+  .why { font-size:13px; background:#fafafa; border-left:4px solid var(--ink); padding:8px 10px; border-radius:0 8px 8px 0; margin:8px 0; }
+  .trade { font-size:12px; color:#8a5a00; margin-top:6px; }
+  .aibubble { background:#fff; border:1.5px solid var(--ink); border-radius:14px 14px 14px 4px; padding:14px; margin-bottom:12px; font-size:14px; line-height:1.5; }
+  .aictx { font-size:11px; color:var(--gray); border:1px dashed var(--line); border-radius:8px; padding:6px 10px; margin-bottom:14px; }
+  .photo { width:64px; height:64px; border-radius:50%; border:2px dashed var(--line); display:flex; align-items:center; justify-content:center; color:var(--gray); font-size:10px; text-align:center; flex:0 0 auto; }
+  .home-head { display:flex; gap:12px; align-items:center; margin-bottom:16px; }
+  .state { border:1.5px solid var(--line); border-left:6px solid var(--ink); border-radius:10px; background:#fff; padding:14px; margin-bottom:12px; }
+  .state.care { border-left-color:var(--ok); }
+  .state h3 { font-size:15px; margin-bottom:4px; }
+  .state p { font-size:13px; color:var(--gray); }
+  .askbar { display:flex; gap:8px; margin-top:16px; }
+  .askbar input { flex:1; padding:12px; border:1.5px solid var(--line); border-radius:10px; font-size:14px; }
+  .askbar button { padding:12px 16px; border:2px solid var(--ink); background:var(--ink); color:#fff; border-radius:10px; cursor:pointer; }
+  .q h4 { font-size:15px; margin-bottom:10px; }
+  .chip { display:block; width:100%; text-align:left; padding:12px; border:1.5px solid var(--line); border-radius:10px; font-size:14px; background:#fff; cursor:pointer; margin-bottom:8px; }
+  .chip:hover { border-color:var(--ink); }
+  .known { font-size:12px; background:#eef4ee; border:1px solid var(--ok); border-radius:8px; padding:8px 10px; margin-bottom:14px; color:#333; }
+  .slot { display:inline-block; padding:10px 14px; border:1.5px solid var(--line); border-radius:10px; background:#fff; font-size:13px; margin:0 8px 8px 0; cursor:pointer; }
+  .kv { display:flex; justify-content:space-between; font-size:13px; padding:6px 0; border-bottom:1px dashed var(--line); }
+  .kv:last-child { border-bottom:none; }
+  .share { display:flex; align-items:flex-start; gap:8px; font-size:13px; padding:6px 0; }
+  .share input { margin-top:2px; }
+  .nope { font-size:12px; color:var(--gray); padding:4px 0 0 22px; }
+  .badge { display:inline-block; font-size:11px; font-weight:700; border:2px solid var(--ok); color:var(--ok); border-radius:6px; padding:2px 8px; margin-bottom:10px; }
+  .badge.today { border-color:#8a5a00; color:#8a5a00; }
+  .badge.emerg { border-color:var(--warn); color:var(--warn); }
+  .badge.obs { border-color:var(--gray); color:var(--gray); }
+  .redflags { font-size:12px; background:#fff3ee; border:1px dashed var(--warn); border-radius:8px; padding:10px; margin:10px 0; }
+  .cdgrid { font-size:13px; }
+  .cdgrid .row { padding:8px 0; border-bottom:1px dashed var(--line); }
+  .cdgrid .row:last-child { border-bottom:none; }
+  .cdgrid b { display:block; font-size:11px; color:var(--gray); text-transform:uppercase; letter-spacing:.05em; margin-bottom:2px; }
+  .detail { display:none; font-size:12px; background:#fafafa; border:1px dashed var(--line); border-radius:8px; padding:10px; margin-top:8px; }
+  .detail.open { display:block; }
+  .docres { border:1.5px solid var(--ok); }
+  .aiexpl { border:1.5px dotted #4a4a8a; }
+  .tl { border-left:2px solid var(--line); margin-left:8px; padding-left:16px; }
+  .tl .ev { position:relative; margin-bottom:16px; }
+  .tl .ev::before { content:""; position:absolute; left:-22px; top:4px; width:10px; height:10px; border-radius:50%; background:var(--ink); }
+  .tl .ev.old::before { background:#fff; border:2px solid var(--line); }
+  .note { font-size:11px; color:var(--gray); margin-top:18px; text-align:center; }
+</style>
+</head>
+<body>
+<div class="phone">
+
+  <!-- H01 — Home -->
+  <section class="screen active" id="h01">
+    <div class="tag">H01 · Home</div>
+    <div class="home-head">
+      <div class="photo">фото<br>Бони</div>
+      <div><h1 style="margin-bottom:2px;">Боня</h1><p class="sub" style="margin:0;">Собака · корги · ~13 кг</p></div>
+    </div>
+    <div class="state"><h3>На сегодня нет активных задач</h3><p>Активного лечения нет. Если что-то беспокоит — скажите Pet AI.</p></div>
+    <div class="askbar">
+      <input value="Боня второй день чешет левое ухо" readonly>
+      <button onclick="go('vai01')">➤</button>
+    </div>
+    <div class="note">low-fi · Veterinary Care Loop · TEST_CANDIDATE · safety-тексты — DRAFT COPY</div>
+  </section>
+
+  <!-- VAI01 — Contextual Response -->
+  <section class="screen" id="vai01">
+    <div class="tag">VAI01 · Pet AI</div>
+    <div class="aictx">Контекст: Боня · Home · релевантная история (grooming-факты не поднимаются — нерелевантны)</div>
+    <div class="aibubble">
+      Понял: Боня второй день чешет левое ухо.<br><br>
+      В мае у Бони уже была похожая проблема <b>с этим же, левым ухом</b> — тогда помогли визит и лечение у <b>Dr. Ивановой</b> (клиника «Здоровые лапы»). Сейчас активного лечения нет.<br><br>
+      Я не врач и не ставлю диагноз. Помогу понять срочность и подготовиться к визиту. Несколько коротких вопросов — по одному.
+    </div>
+    <span class="src prov">Источник истории: заключение клиники, 18 мая</span>
+    <button class="btn" onclick="startIntake()">Начать</button>
+  </section>
+
+  <!-- VAI02 — Adaptive Intake (sequential) -->
+  <section class="screen" id="vai02">
+    <div class="tag">VAI02 · Уточнение · шаг <span id="qNum">1</span> из <span id="qTotal">6</span></div>
+    <div class="known">Уже знаю и не переспрашиваю: длительность — <b>2-й день</b> (из вашего сообщения); Боня, корги, ~13 кг; эпизод левого уха в мае.</div>
+    <div class="q">
+      <h4 id="qText">…</h4>
+      <div id="qOpts"></div>
+    </div>
+    <div class="note">DRAFT COPY · вопросы последовательные и адаптивные; при тревожном ответе остальные пропускаются</div>
+  </section>
+
+  <!-- VAI03 — Care Decision -->
+  <section class="screen" id="vai03">
+    <div class="tag">VAI03 · Care Decision</div>
+    <span class="badge" id="cdBadge">ПЛАНОВЫЙ ОСМОТР</span>
+    <div class="card cdgrid">
+      <div class="row"><b>Что известно</b><span id="cdKnown">…</span></div>
+      <div class="row"><b>Уровень срочности</b><span id="cdUrg">…</span></div>
+      <div class="row"><b>Почему</b><span id="cdWhy">…</span></div>
+      <div class="row"><b>Следующее действие</b><span id="cdAct">…</span></div>
+    </div>
+    <div class="redflags" id="rfBox"><b>Обратитесь срочно, если появится:</b> наклон головы набок · шаткость · выраженная вялость · кровь или отёк уха.</div>
+    <button class="btn" id="cdPrimary" onclick="go('vm01')">Подобрать врача</button>
+    <button class="btn link" id="cdSecondary" onclick="alert('Демо: наблюдение сохранится в Историю как событие от владельца (не как мед. факт). При ухудшении срочность пересмотрится.')">Пока понаблюдаю</button>
+    <div class="note">DRAFT COPY · это рекомендация следующего шага, не диагноз. «У Бони отит» — запрещённая формулировка</div>
+  </section>
+
+  <!-- VAI03-E — Emergency (без marketplace) -->
+  <section class="screen" id="vai03e">
+    <div class="tag">VAI03-E · Emergency</div>
+    <span class="badge emerg">СРОЧНАЯ ПОМОЩЬ</span>
+    <div class="aibubble" style="border-color:var(--warn);">
+      То, что вы описали, — <b>возможный признак серьёзной проблемы</b> (нарушение равновесия / выраженная вялость). Я не врач и не могу оценить тяжесть.<br><br>
+      <b>Боне нужна срочная ветеринарная помощь — сегодня, сейчас.</b>
+    </div>
+    <button class="btn warn" onclick="alert('Демо: звонок в дежурную клинику 24/7 (1,0 км).')">Позвонить в дежурную клинику 24/7</button>
+    <button class="btn" onclick="alert('Демо: маршрут до дежурной клиники, 1,0 км.')">Маршрут</button>
+    <div class="card">
+      <h3>Сводка для врача (готова)</h3>
+      <p>Левое ухо, 2-й день · ваши ответы · эпизод мая (заключение клиники). Покажите при приёме.</p>
+      <span class="src prov">Источник истории: заключение клиники, 18 мая</span>
+    </div>
+    <div class="note">Emergency-инвариант: нет matching-выдачи, нет цен, нет обычного booking flow</div>
+  </section>
+
+  <!-- VM01 — Veterinary Matching -->
+  <section class="screen" id="vm01">
+    <div class="tag">VM01 · Подбор Pet AI · 3 варианта</div>
+    <p class="sub" id="vm01sub">Под задачу: осмотр уха у собаки. Есть история в клинике; срочность — плановая.</p>
+    <div id="vm01cards"></div>
+    <div class="note">Ваш грумер Анна не предлагается — это не её компетенция. Relationship не побеждает отсутствие компетенции.</div>
+    <button class="btn link" onclick="alert('Каталог — fallback. В прототипе не реализован.')">Показать весь каталог</button>
+  </section>
+
+  <!-- VM02 — Veterinarian Profile -->
+  <section class="screen" id="vm02">
+    <div class="tag">VM02 · Врач × Боня × осмотр уха</div>
+    <div class="home-head">
+      <div class="photo">фото</div>
+      <div><h1 style="margin-bottom:2px;" id="vtName">Dr. Иванова</h1><p class="sub" style="margin:0;" id="vtKind">ветеринар-дерматолог · «Здоровые лапы»</p></div>
+    </div>
+    <h3 style="font-size:15px;margin-bottom:8px;">Почему <span id="vtName2">Dr. Иванова</span> подходит Боне?</h3>
+    <div class="why" id="vtWhy">…</div>
+    <div class="card">
+      <div class="kv"><span>Специализация</span><b id="vtSpec">дерматология, отология</b></div>
+      <div class="kv"><span>Верификация</span><b id="vtVerif">диплом проверен</b></div>
+      <div class="kv"><span>Клиника</span><b id="vtClinic">«Здоровые лапы»</b></div>
+      <div class="kv"><span>Приём</span><b id="vtPrice">2 200 ₽</b></div>
+      <div class="kv"><span>Расстояние</span><b id="vtDist">2,1 км</b></div>
+    </div>
+    <h3 style="font-size:14px;margin:8px 0;">Выберите время</h3>
+    <div id="vtSlots"></div>
+    <div class="note">Ветеринарный профиль: квалификация и верификация, не портфолио</div>
+  </section>
+
+  <!-- VB01 — Booking Review -->
+  <section class="screen" id="vb01">
+    <div class="tag">VB01 · Проверка записи</div>
+    <h1>Проверьте запись</h1>
+    <div class="card">
+      <div class="kv"><span>Врач / клиника</span><b id="bkVet">Dr. Иванова</b></div>
+      <div class="kv"><span>Повод</span><b>Чешет левое ухо, 2-й день</b></div>
+      <div class="kv"><span>Время</span><b id="bkSlot">завтра 11:00</b></div>
+      <div class="kv"><span>Приём</span><b id="bkPrice">2 200 ₽</b></div>
+    </div>
+    <div class="card">
+      <h3>Что получит врач</h3>
+      <div class="share"><input type="checkbox" checked id="sh1"><label for="sh1">Боня, собака, корги, ~13 кг</label></div>
+      <div class="share"><input type="checkbox" checked id="sh2"><label for="sh2">Симптомы и длительность + ответы intake</label></div>
+      <div class="share"><input type="checkbox" checked id="sh3"><label for="sh3">Прошлый эпизод левого уха, май <span class="src prov" style="margin-top:2px;">заключение клиники</span></label></div>
+      <div class="share"><input type="checkbox" id="sh4"><label for="sh4">Фото уха (не приложено)</label></div>
+      <p class="nope">Не передаётся: вся остальная память Бони (груминг, неподтверждённые факты).</p>
+      <button class="btn link" style="text-align:left;padding-left:0;" onclick="document.getElementById('ctxDetail').classList.toggle('open')">Посмотреть / изменить передаваемый контекст</button>
+      <div class="detail" id="ctxDetail">
+        Передаётся как есть:<br>
+        · profile: Боня, собака, корги, ~13 кг<br>
+        · complaint: чешет левое ухо, длительность 2 дня<br>
+        · intake: боль — <span id="dPain">…</span>; выделения — <span id="dDis">…</span>; состояние — <span id="dBeh">…</span><br>
+        · history_ref: эпизод 18 мая (источник: заключение клиники)<br>
+        Снимите галочку выше, чтобы исключить блок.
+      </div>
+    </div>
+    <button class="btn" onclick="confirmBooking()">Подтвердить запись</button>
+    <button class="btn link" onclick="go('vm02')">Изменить время</button>
+  </section>
+
+  <!-- VB02 — Confirmed -->
+  <section class="screen" id="vb02">
+    <div class="tag">VB02 · Запись</div>
+    <span class="badge">СТАТУС: CONFIRMED</span>
+    <h1>Запись подтверждена</h1>
+    <p class="sub">Показывается только после фактического подтверждения (state machine).</p>
+    <div class="card">
+      <div class="kv"><span>Врач</span><b id="cfVet">Dr. Иванова</b></div>
+      <div class="kv"><span>Время</span><b id="cfSlot">завтра 11:00</b></div>
+    </div>
+    <div class="card"><h3>Что дальше</h3><p>Напомним перед визитом. После приёма — заключение врача вернётся в историю Бони с источником.</p></div>
+    <button class="btn" onclick="go('vr01')">(демо) Визит состоялся →</button>
+    <button class="btn link" onclick="go('h01')">На Home</button>
+  </section>
+
+  <!-- VR01 — Structured Visit Result -->
+  <section class="screen" id="vr01">
+    <div class="tag">VR01 · Результат визита</div>
+    <h1>Результат визита</h1>
+    <div class="card docres">
+      <h3>Doctor Result</h3>
+      <p><b>Диагноз:</b> наружный отит, левое ухо.<br>
+      <b>Назначение:</b> капли ушные, 2 раза в день, 7 дней.<br>
+      <b>Контроль:</b> осмотр через 10 дней.</p>
+      <span class="src prov">Источник: Dr. Иванова (врач)</span><span class="src">заключение, 26 авг</span>
+    </div>
+    <div class="card aiexpl">
+      <h3>Pet AI Explanation</h3>
+      <p>Отит — воспаление уха. Назначение врача добавлено в Care Бони без изменений: дозировка и сроки — как в заключении. Если что-то в назначении непонятно — спросите, объясню словами врача.</p>
+      <span class="src ai">Объяснение AI · не медицинский факт</span>
+    </div>
+    <div class="aictx">AI структурирует и объясняет. AI не меняет лечение и не добавляет свою дозировку.</div>
+    <button class="btn" onclick="go('vc01')">Сформировать план Care</button>
+  </section>
+
+  <!-- VC01 — Care Plan / Follow-up -->
+  <section class="screen" id="vc01">
+    <div class="tag">VC01 · Care Plan</div>
+    <h1>План на ближайшие дни</h1>
+    <div class="state care">
+      <h3>Активное лечение</h3>
+      <p>Капли 2 раза в день · до 2 сен · назначение Dr. Ивановой (источник: врач)</p>
+    </div>
+    <div class="card">
+      <h3>Сегодня</h3>
+      <p>· Вечерняя доза капель<br>· Не давать Боне тереть ухо лапой</p>
+    </div>
+    <div class="card">
+      <h3>Follow-up</h3>
+      <p>Контрольный осмотр через 10 дней у Dr. Ивановой — предложу записаться, когда подойдёт время.</p>
+      <span class="src prov">Источник: назначение врача</span>
+    </div>
+    <div class="card">
+      <h3>Наблюдение владельца</h3>
+      <p>«Ухо чистое, Боня активна, капли даёт капать» — сохранить?</p>
+      <span class="src">Источник: вы</span><span class="src unc">Наблюдение владельца, не медицинский исход</span>
+      <button class="btn ghost" style="margin-top:10px;" onclick="alert('Демо: сохранено как owner observation.')">Сохранить наблюдение</button>
+    </div>
+    <button class="btn" onclick="go('hist01')">В историю Бони</button>
+  </section>
+
+  <!-- HIST01 — Updated Timeline -->
+  <section class="screen" id="hist01">
+    <div class="tag">HIST01 · История Бони</div>
+    <h1>История</h1>
+    <div class="tl">
+      <div class="ev">
+        <div class="card" style="margin-bottom:0;">
+          <h3>Ветеринарный визит · 26 авг</h3>
+          <p>Dr. Иванова, «Здоровые лапы». Диагноз: наружный отит, левое ухо. Назначение: капли 7 дней, контроль через 10 дней.</p>
+          <span class="src prov">Источник: Dr. Иванова (врач)</span>
+        </div>
+      </div>
+      <div class="ev old">
+        <div class="card" style="margin-bottom:0;">
+          <h3>Наблюдение владельца · 25 авг</h3>
+          <p>Боня второй день чешет левое ухо.</p>
+          <span class="src">Источник: вы</span>
+        </div>
+      </div>
+      <div class="ev old">
+        <div class="card" style="margin-bottom:0;">
+          <h3>Эпизод левого уха · 18 мая</h3>
+          <p>Визит и лечение у Dr. Ивановой, выздоровление.</p>
+          <span class="src prov">Источник: заключение клиники</span>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <h3>Заметка Pet AI (наблюдение)</h3>
+      <p>Повторный эпизод с тем же ухом за ~3,5 месяца.</p>
+      <span class="src ai">Источник: наблюдение AI</span><span class="src unc">Не диагноз · обсудить с врачом при повторении</span>
+    </div>
+    <button class="btn" onclick="go('h01b')">На Home</button>
+  </section>
+
+  <!-- H01' — Updated Home -->
+  <section class="screen" id="h01b">
+    <div class="tag">H01 · Home · активный Care</div>
+    <div class="home-head">
+      <div class="photo">фото<br>Бони</div>
+      <div><h1 style="margin-bottom:2px;">Боня</h1><p class="sub" style="margin:0;">Собака · корги · ~13 кг</p></div>
+    </div>
+    <div class="state care">
+      <h3>Капли 2 раза в день · до 2 сен</h3>
+      <p>Назначение Dr. Ивановой от 26 авг. Контроль через 10 дней — предложим записаться к ней же.</p>
+    </div>
+    <div class="card"><h3>Pet AI обновил историю Бони</h3><p>Визит, диагноз и назначение врача — с источником. Ваши наблюдения — отдельно, как наблюдения.</p></div>
+    <div class="askbar">
+      <input placeholder="Спросить Pet AI…">
+      <button onclick="alert('Демо: ответы учитывают активное лечение и историю.')">➤</button>
+    </div>
+    <div class="note">На Home — только актуальное следствие: лечение и следующий шаг</div>
+  </section>
+
+</div>
+
+<script>
+  // Prototype state machine: AVAILABLE → BOOKING REVIEW → CONFIRMED → COMPLETED
+  const state = { booking:'AVAILABLE', vet:'ivanova', slot:'завтра 11:00', intake:{}, urgency:'PLANNED_VISIT' };
+
+  // ---- VAI02: sequential adaptive intake (обязательные safety checks сценария) ----
+  const steps = [
+    { key:'pain', text:'Боня даёт трогать левое ухо?', opts:[
+      {label:'Даёт спокойно', val:'calm'}, {label:'Дёргается или скулит', val:'flinch'}, {label:'Не даёт совсем', val:'no_touch', today:true}]},
+    { key:'discharge', text:'Есть ли выделения или запах из уха?', opts:[
+      {label:'Нет', val:'none'}, {label:'Немного', val:'some'}, {label:'Сильные / с запахом', val:'lots', today:true}]},
+    { key:'general', text:'Общее состояние?', opts:[
+      {label:'Как обычно', val:'normal'}, {label:'Беспокойная', val:'restless'}, {label:'Вялая', val:'lethargic'}]},
+    { key:'severe', text:'Есть ли выраженная вялость (не встаёт, ни на что не реагирует)?', opts:[
+      {label:'Нет', val:'no'}, {label:'Да', val:'yes', emergency:true}]},
+    { key:'balance', text:'Наклон головы набок или шаткость при ходьбе?', opts:[
+      {label:'Нет', val:'no'}, {label:'Наклоняет голову', val:'tilt', emergency:true}, {label:'Шатается', val:'wobble', emergency:true}]},
+    { key:'trauma', text:'Были ли в последние дни травмы, купание, драки?', opts:[
+      {label:'Нет', val:'no'}, {label:'Да', val:'yes'}]}
+  ];
+  let stepIdx = 0;
+  function startIntake() { stepIdx = 0; state.intake = {}; renderStep(); go('vai02'); }
+  function renderStep() {
+    const s = steps[stepIdx];
+    document.getElementById('qNum').textContent = stepIdx + 1;
+    document.getElementById('qTotal').textContent = steps.length;
+    document.getElementById('qText').textContent = s.text;
+    const box = document.getElementById('qOpts');
+    box.innerHTML = '';
+    s.opts.forEach(o => {
+      const c = document.createElement('span');
+      c.className = 'chip'; c.textContent = o.label;
+      c.onclick = () => answer(s, o);
+      box.appendChild(c);
+    });
+  }
+  function answer(s, o) {
+    state.intake[s.key] = o.val;
+    if (o.emergency) { state.urgency = 'EMERGENCY'; go('vai03e'); return; } // адаптивно: остальные вопросы пропускаем
+    if (o.today) state.intake._today = true;
+    stepIdx++;
+    if (stepIdx < steps.length) { renderStep(); } else { decide(); }
+  }
+
+  // ---- VAI03: Care Decision (что известно → срочность → почему → действие) ----
+  const LABELS = {
+    pain:{calm:'ухо даёт трогать',flinch:'болезненно при касании',no_touch:'не даёт трогать ухо'},
+    discharge:{none:'без выделений',some:'небольшие выделения',lots:'сильные выделения/запах'},
+    general:{normal:'состояние обычное',restless:'беспокойная',lethargic:'вялая'},
+    trauma:{no:'без травм',yes:'была травма/купание'}
+  };
+  function decide() {
+    const i = state.intake;
+    let level = 'PLANNED_VISIT';
+    if (i._today) level = 'TODAY';
+    if (i.discharge === 'none' && i.general === 'normal' && i.pain === 'calm' && i.trauma === 'no') level = 'OBSERVATION';
+    state.urgency = level;
+    const known = 'Левое ухо, 2-й день · ' + (LABELS.pain[i.pain]||'') + ' · ' + (LABELS.discharge[i.discharge]||'') + ' · ' + (LABELS.general[i.general]||'')
+      + (i.trauma==='yes' ? ' · была травма/купание' : '') + ' · эпизод левого уха в мае (источник: клиника).';
+    const cfg = {
+      OBSERVATION:  { badge:'НАБЛЮДЕНИЕ', cls:'obs',  urg:'Пока не требует визита',
+        why:'Нет выделений, состояние и поведение обычные, ухо не болезненно. Но был эпизод в мае — наблюдаем внимательно.',
+        act:'Понаблюдать 1–2 дня. Сохраню наблюдение; при ухудшении пересмотрю срочность.',
+        primary:'Всё равно подобрать врача', showSecondary:true },
+      PLANNED_VISIT:{ badge:'ПЛАНОВЫЙ ОСМОТР', cls:'', urg:'Осмотр в ближайшее время · не экстренно',
+        why:'Признаков экстренности нет, но ушные воспаления без осмотра не лечат, и у Бони уже был эпизод с этим ухом.',
+        act:'Боне стоит показаться врачу в ближайшие 1–2 дня.',
+        primary:'Подобрать врача', showSecondary:true },
+      TODAY:        { badge:'ЖЕЛАТЕЛЬНО СЕГОДНЯ', cls:'today', urg:'Желательно сегодня',
+        why:'Сильные выделения или выраженная боль — воспаление может прогрессировать. Это не экстренность, но ждать не стоит.',
+        act:'Показать Боню врачу сегодня.',
+        primary:'Найти, кто примет сегодня', showSecondary:false }
+    }[level];
+    const b = document.getElementById('cdBadge');
+    b.textContent = cfg.badge; b.className = 'badge ' + cfg.cls;
+    document.getElementById('cdKnown').textContent = known;
+    document.getElementById('cdUrg').textContent = cfg.urg;
+    document.getElementById('cdWhy').textContent = cfg.why;
+    document.getElementById('cdAct').textContent = cfg.act;
+    document.getElementById('cdPrimary').textContent = cfg.primary;
+    document.getElementById('cdSecondary').style.display = cfg.showSecondary ? 'block' : 'none';
+    document.getElementById('rfBox').style.display = (level === 'TODAY') ? 'none' : 'block';
+    document.getElementById('vm01sub').textContent = (level === 'TODAY')
+      ? 'Срочность: сегодня. Приоритет ранжирования — скорость приёма.'
+      : 'Под задачу: осмотр уха у собаки. Есть история в клинике; срочность — плановая.';
+    renderMatching();
+    go('vai03');
+  }
+
+  // ---- VM01/VM02: veterinary matching (тот же shell, ветеринарные поля) ----
+  const vets = {
+    ivanova: { name:'Dr. Иванова', kind:'ветеринар-дерматолог · «Здоровые лапы»', spec:'дерматология, отология', verif:'диплом проверен', clinic:'«Здоровые лапы»',
+      price:'2 200 ₽', dist:'2,1 км', trust:'12 лет практики · 4,9', slots:['завтра 11:00','завтра 15:30'],
+      why:'Лечила левое ухо Бони в мае: нужная компетенция (отология) + знает историю. Trade-off: ближайшее окно — завтра.' },
+    vetcenter:{ name:'Клиника «ВетЦентр»', kind:'дерматология/отология · стационар', spec:'дерматология, отология', verif:'лицензия проверена', clinic:'«ВетЦентр»',
+      price:'2 800 ₽', dist:'4,0 км', trust:'4,8 · 320 отзывов', slots:['сегодня 19:00','завтра 10:00'],
+      why:'Профильная отология и приём уже сегодня вечером. Trade-off: дальше, историю Бони не знает — передам с вашего разрешения.' },
+    duty:    { name:'Дежурная клиника 24/7', kind:'круглосуточный приём', spec:'врачи общего профиля', verif:'лицензия проверена', clinic:'24/7',
+      price:'3 500 ₽', dist:'1,0 км', trust:'4,5 · 500 отзывов', slots:['сейчас, без записи'],
+      why:'Ближайшая, примет без записи. Trade-off: врач общего профиля (не отолог), ночной тариф; для планового случая — запасной вариант.' }
+  };
+  const orderPlanned = ['ivanova','vetcenter','duty'];
+  const orderToday   = ['vetcenter','duty','ivanova'];
+  function renderMatching() {
+    const order = (state.urgency === 'TODAY') ? orderToday : orderPlanned;
+    const box = document.getElementById('vm01cards');
+    box.innerHTML = '';
+    order.forEach(key => {
+      const v = vets[key];
+      const speedNote = (state.urgency === 'TODAY' && key === 'vetcenter')
+        ? '<p class="trade">Первый из-за срочности: приём сегодня. Компетенция (отология) сохраняется требованием.</p>' : '';
+      box.innerHTML += '<div class="card clickable" onclick="pickVet(\''+key+'\')">'
+        + '<h3>'+v.name+'</h3>'
+        + '<div class="why">Почему подходит: '+v.why+'</div>'
+        + '<div class="kv"><span>Компетенция</span><b>'+v.spec+'</b></div>'
+        + '<div class="kv"><span>Доверие</span><b>'+v.trust+'</b></div>'
+        + '<div class="kv"><span>Клиника</span><b>'+v.clinic+'</b></div>'
+        + '<div class="kv"><span>Ближайшее время</span><b>'+v.slots[0]+'</b></div>'
+        + '<div class="kv"><span>Приём</span><b>'+v.price+'</b></div>'
+        + '<div class="kv"><span>Расстояние</span><b>'+v.dist+'</b></div>'
+        + speedNote + '</div>';
+    });
+  }
+  function pickVet(key) {
+    state.vet = key;
+    const v = vets[key];
+    ['vtName','vtName2'].forEach(id => document.getElementById(id).textContent = v.name);
+    document.getElementById('vtKind').textContent = v.kind;
+    document.getElementById('vtWhy').textContent = v.why;
+    document.getElementById('vtSpec').textContent = v.spec;
+    document.getElementById('vtVerif').textContent = v.verif;
+    document.getElementById('vtClinic').textContent = v.clinic;
+    document.getElementById('vtPrice').textContent = v.price;
+    document.getElementById('vtDist').textContent = v.dist;
+    const sb = document.getElementById('vtSlots');
+    sb.innerHTML = '';
+    v.slots.forEach(s => sb.innerHTML += '<span class="slot" onclick="pickSlot(\''+s+'\')">'+s+'</span>');
+    go('vm02');
+  }
+  function pickSlot(slot) {
+    state.slot = slot; state.booking = 'BOOKING REVIEW';
+    const v = vets[state.vet];
+    document.getElementById('bkVet').textContent = v.name;
+    document.getElementById('bkSlot').textContent = slot;
+    document.getElementById('bkPrice').textContent = v.price;
+    const i = state.intake;
+    document.getElementById('dPain').textContent = LABELS.pain[i.pain] || '—';
+    document.getElementById('dDis').textContent = LABELS.discharge[i.discharge] || '—';
+    document.getElementById('dBeh').textContent = LABELS.general[i.general] || '—';
+    go('vb01');
+  }
+  function confirmBooking() {
+    state.booking = 'CONFIRMED';
+    document.getElementById('cfVet').textContent = vets[state.vet].name;
+    document.getElementById('cfSlot').textContent = state.slot;
+    go('vb02');
+  }
+  function go(id) {
+    if (id === 'vb02' && state.booking !== 'CONFIRMED') return; // no fake confirmation
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    window.scrollTo(0,0);
+  }
+</script>
+</body>
+</html>
