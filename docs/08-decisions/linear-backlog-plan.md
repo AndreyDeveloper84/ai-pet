@@ -118,3 +118,55 @@ PET-1 (✔ draft) → PET-2..4 → PET-5..7 → UX GATE → DOMAIN GATE → PET-
 
 - `designs/low-fi/` — прикладывать к PET-2/3/4 по мере готовности.
 - `designs/references/` — существующие макеты (Q-01: не предоставлены).
+
+---
+
+## Обновление 2026-08-30 — UX Validation + Provider Research
+
+### Новые/уточнённые задачи (заводить после создания Linear)
+
+**PET-5. Run owner UX tests** (уточнено)
+- Вход: recruiting plan ✅, runbook ✅, 3 prototypes ✅, 3 scripts ✅, findings register ✅.
+- Acceptance criteria: 5–8 сессий по runbook; findings занесены и TRIAGED; критерии `docs/02-ux/ux-validation-gate.md` оценены.
+- Артефакты: `research/owner-interviews/*`, `research/findings/ux-findings-register.md`.
+
+**PET-5b. Triage findings + UX corrections** (новая)
+- После первой партии сессий (2–3): triage S0–S2, коррекции prototypes, RETEST.
+- Acceptance criteria: нет открытых S0; повторяющиеся S1 закрыты.
+
+**PET-5c. UX FREEZE v0.2** (новая, решение владельца)
+- Критерии: `docs/02-ux/ux-validation-gate.md`. Фиксация в decision log.
+
+**PET-6. Run provider interviews (groomers)** (уточнено)
+- Вход: `groomer-interview-guide-v1.md` ✅, recruiting messages ✅.
+- Acceptance criteria: 3–5 интервью; must-have Pet Context fields; решение по Q-10 (request vs instant).
+
+**PET-7. Run clinic interviews** (уточнено)
+- Вход: `vet-clinic-interview-guide-v1.md` ✅.
+- Acceptance criteria: 2–3 интервью; фактическая CRM-картина (Q-09); требования к интеграции; форма medical result.
+
+**PET-10. Domain extraction** (новая, после UX FREEZE v0.2)
+- Minimum domain model из подтверждённых UX flows (Pet Core, Care Decision, booking lifecycle, provider core).
+
+**PET-11. Ayla reuse audit** (бывш. PET-8; вход: `docs/04-architecture/ayla-reuse-audit-plan.md` ✅, после PET-10)
+
+### Artifacts → future Linear mapping
+
+| Артефакт | Linear issue |
+|---|---|
+| `prototypes/onboarding-low-fi/` (DA-5) | PET-2 |
+| `prototypes/grooming-loop-low-fi/` (DA-6) | PET-3 |
+| `prototypes/veterinary-loop-low-fi/` (DA-7) | PET-4 |
+| `ux-test-script-v1.md` | PET-2, PET-5 |
+| `ux-test-script-grooming-v1.md` | PET-3, PET-5 |
+| `ux-test-script-veterinary-v1.md` | PET-4, PET-5 |
+| `recruiting-plan-v1.md`, `session-runbook-v1.md`, `session-template.md` | PET-5 |
+| `ux-findings-register.md` | PET-5, PET-5b (живой артефакт, линк в обеих) |
+| `ux-validation-gate.md` | PET-5c |
+| `groomer-interview-guide-v1.md` | PET-6 |
+| `vet-clinic-interview-guide-v1.md` | PET-7 |
+| `provider-interviews/recruiting-messages-v1.md` | PET-6, PET-7 |
+| `ayla-reuse-inventory.md` | PET-11 |
+| `ayla-reuse-audit-plan.md` | PET-11 |
+| `security-note-firebase-key.md` | отдельный operational issue у владельца (вне Pet AI backlog — касается Ayla workspace) |
+| `ux-shell-matrix.md` | PET-10 (вход для domain extraction) |
