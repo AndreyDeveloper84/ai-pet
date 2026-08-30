@@ -64,3 +64,33 @@
 - Не рефакторить код Ayla.
 - Не выбирать стек/архитектуру Pet AI (это ARCHITECTURE GATE, после аудита).
 - Не переносить salon-domain концепции в Pet AI.
+
+## Preliminary reuse hypotheses (NON-BINDING, добавлено 2026-08-30 после Discovery Cycle 1)
+
+Это **HYPOTHESES, не решения**. Основание: `ayla-discovery-report.md` (факты). Решения — только в reuse audit после REUSE GATE, по матрице выше и domain requirements.
+
+### Potential strong candidates (проверить первыми)
+
+- AI orchestration patterns/core (`ayla-ai-core`: DI-архитектура, guardrails, tool-ID validation, frozen voices);
+- memory provenance mechanics (MemoryEntry: source/status/zones — богаче MVP-правил Pet AI);
+- scheduling resolver (чистые функции availability → slots);
+- booking concurrency/idempotency (row lock + resolver recheck + partial unique + CAS-паттерны, доказано тестами);
+- eventbus/outbox (зрелый, самый покрытый тестами);
+- observability/audit (AuditLog, AI metrics, replay).
+
+### Likely Pet-specific/new (в Ayla отсутствует или beauty-specific)
+
+- Pet domain;
+- Pet Timeline;
+- Current State;
+- Care;
+- Care Decision (D-16);
+- provider result/recommendation lifecycle (в Ayla NOT FOUND — completion только timestamp).
+
+### Requires careful generalization (tenant/salon-coupling)
+
+- Provider (salon=tenant, beauty-мастера);
+- capabilities (услуги салона → vet/grooming компетенции);
+- marketplace discovery (sole cross-tenant read, lint MKT1);
+- tenancy (сквозной ContextVar);
+- conversations/context ownership (сalon-контекст vs pet-контекст).

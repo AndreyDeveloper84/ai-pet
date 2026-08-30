@@ -19,24 +19,23 @@
 
 ## TRACK A — Owner Validation
 
-- Статус: **готов к старту, ожидает респондентов.** Wave 1 = P-01→P-03 (не ждём полного набора).
-- Пакет: recruiting plan, runbook, template, register, 3 prototypes + 3 scripts.
-- Данных сессий: 0. Wave-отчётов нет.
-- После wave 1: session records → findings → triage (S0–S4, связь с гипотезами, evidence ≠ interpretation) → отчёт UX VALIDATION WAVE 1 владельцу. Prototype до triage не трогаем.
+- Статус: **готов к старту, ожидает респондентов.** Wave 1: P-01 (A+Grooming), P-02 (A+Veterinary), P-03 (A+Grooming) → стоп, triage. Wave 2 (после triage): P-04 Vet, P-05 Grooming, P-06 Vet; P-07/P-08 — только для доп. данных/RETEST.
+- Правило волны: onboarding проходят все; один основной Care Loop на участника в Wave 1 (нет Grooming+Veterinary подряд — обучение механике загрязняет второй loop); prototypes не менять между P-01…P-03 (кроме S0, делающего тест небезопасным).
+- Пакет: recruiting plan, runbook (схема волн), template, register, 3 prototypes + 3 scripts.
+- Данных сессий: 0. После P-03: triage → отчёт UX VALIDATION WAVE 1 (Finding | Evidence | Frequency | Severity | Hypothesis | Recommendation; отдельно S0, S1, repeated S2). Prototype до triage не трогаем.
 
 ## TRACK B — Provider Research
 
-- Статус: **готов к старту.** Wave 1 = 2 грумера + 1 клиника.
+- Статус: **готов к старту.** Wave 1: PR-G01, PR-G02 (грумеры), PR-V01 (клиника).
 - Пакет: 2 interview guides + recruiting messages.
-- Данных: 0. После wave 1: отчёт PROVIDER RESEARCH WAVE 1 (FACT/OBSERVATION/PATTERN/HYPOTHESIS/OPEN QUESTION), без выводов о рынке.
+- Данных: 0. После трёх: synthesis → отчёт PROVIDER RESEARCH WAVE 1 (FACT / OBSERVATION / PATTERN / HYPOTHESIS / OPEN QUESTION), противоречия с prototypes, operational constraints, hypotheses affected. Product автоматически не менять.
 - Фокус-проверки: availability, instant booking, Pet Context, capabilities, completion/result, повторная запись, CRM, дублирование данных.
 
 ## TRACK C — Ayla Technical Discovery
 
-- Статус: **cycle 1 завершён (read-only, NON-BINDING).**
-- Артефакты: `docs/04-architecture/ayla-discovery-report.md` (14 областей: 12 EXISTS, 2 PARTIAL), `ayla-ai-flow.md`, `ayla-booking-flow.md`.
-- Ключевые факты: memory provenance в Ayla богаче MVP-правил Pet AI; booking Ayla не имеет request mode, slot hold и completion result payload; canonical payments/reviews — во внешнем сервисе; deprecated pipeline — мёртвый код; сквозная tenant-coupling.
-- Далее: аудит матрицы — только после domain extraction (REUSE GATE).
+- Статус: **PAUSE.** Cycle 1 завершён; углубление (promptreg, replay, Telegram/web, per-tenant path) — только по конкретному вопросу из UX validation / provider research / DOMAIN GATE / REUSE GATE.
+- Артефакты: `ayla-discovery-report.md`, `ayla-ai-flow.md`, `ayla-booking-flow.md` (все DISCOVERY / NON-BINDING).
+- Зафиксировано: preliminary reuse hypotheses в `ayla-reuse-audit-plan.md` (HYPOTHESES, не решения): strong candidates — AI core, memory provenance, scheduling resolver, booking concurrency, eventbus, observability; pet-specific/new — Pet domain, Timeline, Current State, Care, Care Decision, provider result lifecycle; careful generalization — Provider, capabilities, discovery, tenancy, conversations.
 
 ## Blocked work
 
