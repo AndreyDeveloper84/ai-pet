@@ -6,7 +6,7 @@
 
 ### Q-02. Доступ к Ayla codebase
 
-Подтвердить scope доступа к Ayla для reuse audit (REUSE GATE): какие репозитории/модули доступны, кто выполняет audit. Read-only inventory начат (см. `docs/04-architecture/ayla-reuse-inventory.md`).
+**Частично решено (2026-08-30):** read-only inventory разрешён и выполнен (`docs/04-architecture/ayla-reuse-inventory.md`). Глубокий reuse audit и архитектурные решения по reuse — только после REUSE GATE. Pet AI domain не подгоняется под архитектуру Ayla. Остаток вопроса (канонические репозитории, кто выполняет audit) — к REUSE GATE, не блокирует.
 
 ### Q-03. Технологический стек MVP
 
@@ -20,7 +20,7 @@ Commission/acquisition fee — гипотеза (D-11). Нужен product decis
 
 ### Q-05. Источник респондентов для owner tests
 
-5–8 владельцев собак: канал набора, критерии сегментации — не определены.
+5–8 владельцев собак: канал набора, критерии сегментации — не определены. **Не блокирует UX Prototype track** (решение владельца 2026-08-30) — требуется к запуску тестов.
 
 ### Q-07. Минимальный набор полей O02 (onboarding)
 

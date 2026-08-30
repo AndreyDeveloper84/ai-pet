@@ -18,6 +18,7 @@
 |---|---|---|
 | H01 | Home | State-driven: текущее состояние, действия, доступ к Pet AI |
 | H02 | History (Timeline) | Значимые события жизни питомца |
+| HIST01 | History — post-loop state | Состояние H02 после completed service: новое событие Timeline с source/provider |
 | C01 | Care | Необходимые/рекомендованные действия |
 | P01 | Profile | Профиль питомца + Memory с provenance |
 
@@ -25,8 +26,8 @@
 
 | ID | Экран/состояние | Назначение |
 |---|---|---|
-| AI01 | Pet AI entry (global) | Контекстный вход из любой зоны |
-| AI02 | Need understanding | Диалог уточнения Need с учётом контекста |
+| AI01 | Contextual response | Ответ AI на Need с использованием контекста питомца (история, прошлый специалист, особенности) — не generic |
+| AI02 | Previous relationship decision | «Повторить у {специалиста}» / «Подобрать другого» (Relationship before marketplace) |
 | AI03 | Adaptive intake (Vet) | Сбор симптомов, urgency, red flags |
 | AI04 | Care Decision | Рекомендация следующего действия |
 

@@ -24,12 +24,13 @@
 
 | # | Артефакт | Расположение | Status | Связь | Примечание |
 |---|---|---|---|---|---|
-| DA-1 | Home с крупным фото питомца | `references/` (файл ожидается) | REFERENCE | UX: Home (`docs/02-ux/home.md`) | Существующий макет; не утверждён |
-| DA-2 | Home для нескольких питомцев | `references/` (файл ожидается) | REFERENCE | UX: Home, состояние MULTI_PET | Существующий макет; не утверждён |
-| DA-3 | Предыдущие визуальные концепты | `references/` (файлы ожидаются) | REFERENCE | общий визуальный контекст | Не утверждены |
-| DA-4 | Low-fi onboarding `O01→O02→O03→O04→H01` (актуальный) | `low-fi/` (файл ожидается) | TEST_CANDIDATE | Linear PET-2; `docs/02-ux/onboarding.md` | Кандидат на owner tests |
-| DA-5 | Clickable low-fi prototype onboarding (HTML) | `../prototypes/onboarding-low-fi/` | TEST_CANDIDATE | Linear PET-2; test script v1 | Throwaway prototype для owner tests |
+| DA-1 | Home с крупным фото питомца | `references/` — EXPECTED / NOT MATERIALIZED | REFERENCE | UX: Home (`docs/02-ux/home.md`) | Исходник не в workspace; не реконструировать |
+| DA-2 | Home для нескольких питомцев | `references/` — EXPECTED / NOT MATERIALIZED | REFERENCE | UX: Home, состояние MULTI_PET | Исходник не в workspace |
+| DA-3 | Предыдущие визуальные концепты | `references/` — EXPECTED / NOT MATERIALIZED | REFERENCE | общий визуальный контекст | Исходники не в workspace |
+| DA-4 | Low-fi onboarding `O01→O02→O03→O04→H01` (актуальный) | `low-fi/` — EXPECTED / NOT MATERIALIZED | TEST_CANDIDATE (по описанию владельца) | Linear PET-2; `docs/02-ux/onboarding.md` | Исходник не в workspace; фактический кандидат — DA-5 |
+| DA-5 | Clickable low-fi prototype onboarding (HTML) | `../prototypes/onboarding-low-fi/` | TEST_CANDIDATE | Linear PET-2; `ux-test-script-v1.md` | Фактический артефакт теста |
+| DA-6 | Clickable low-fi prototype Grooming Care Loop (HTML) | `../prototypes/grooming-loop-low-fi/` | TEST_CANDIDATE | Linear PET-3; `ux-test-script-grooming-v1.md` | Фактический артефакт теста |
 
 ## Ожидается от владельца
 
-Файлы DA-1…DA-4 (разместить в соответствующих каталогах; статусы уже назначены).
+Файлы DA-1…DA-4 — EXPECTED / NOT MATERIALIZED: если исходники появятся, разместить в соответствующих каталогах. Отсутствие не блокирует проект (решение владельца 2026-08-30); не реконструировать и не выдавать за сохранённые артефакты.

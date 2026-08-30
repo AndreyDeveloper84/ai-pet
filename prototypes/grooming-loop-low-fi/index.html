@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pet AI — Grooming Care Loop · low-fi · TEST_CANDIDATE</title>
+<!--
+  Pet AI — throwaway clickable low-fi prototype: Grooming Care Loop.
+  Статус: TEST_CANDIDATE (D-13). НЕ production code.
+  Flow: H01 → AI01 → AI02 → M01 → M02 → B01 → B02 → R01 → R02 → HIST01 → H01'
+  Сценарий: Боня (корги, ~13 кг, боится сильной сушки, ранее у грумера Анны, визит оценён положительно).
+  Инварианты: relationship before marketplace; max 3 curated; объяснимые рекомендации без «% match»;
+  minimum relevant authorized context (мед. история грумеру не передаётся);
+  B02 только после фактического confirm (state machine); результат возвращается в Pet Context с source.
+-->
+<style>
+  :root { --ink:#222; --gray:#777; --line:#bbb; --bg:#f2f2f2; }
+  * { box-sizing:border-box; margin:0; padding:0; font-family:-apple-system,"Segoe UI",Roboto,sans-serif; }
+  body { background:#ddd; display:flex; justify-content:center; padding:24px; }
+  .phone { width:375px; min-height:720px; background:var(--bg); border:2px solid var(--ink); border-radius:24px; overflow:hidden; position:relative; }
+  .screen { display:none; padding:24px 20px 40px; min-height:720px; }
+  .screen.active { display:block; }
+  .tag { font-size:11px; color:var(--gray); letter-spacing:.08em; text-transform:uppercase; margin-bottom:12px; }
+  h1 { font-size:21px; margin-bottom:10px; }
+  p.sub { color:var(--gray); font-size:13px; line-height:1.5; margin-bottom:18px; }
+  .btn { display:block; width:100%; padding:14px; margin-top:12px; border:2px solid var(--ink); background:var(--ink); color:#fff; font-size:15px; border-radius:10px; cursor:pointer; text-align:center; }
+  .btn.ghost { background:transparent; color:var(--ink); }
+  .btn.link { border:none; background:none; color:var(--gray); text-decoration:underline; font-size:13px; }
+  .card { background:#fff; border:1.5px solid var(--line); border-radius:12px; padding:14px; margin-bottom:12px; }
+  .card h3 { font-size:15px; margin-bottom:6px; }
+  .card p { font-size:13px; line-height:1.45; }
+  .card.clickable { cursor:pointer; }
+  .card.clickable:hover { border-color:var(--ink); }
+  .src { display:inline-block; font-size:11px; color:var(--gray); border:1px solid var(--line); border-radius:6px; padding:2px 6px; margin-top:8px; margin-right:4px; }
+  .src.unc { color:#8a5a00; border-style:dashed; }
+  .src.prov { color:#1a5a1a; }
+  .meta { font-size:12px; color:var(--gray); margin-top:6px; }
+  .why { font-size:13px; background:#fafafa; border-left:4px solid var(--ink); padding:8px 10px; border-radius:0 8px 8px 0; margin:8px 0; }
+  .trade { font-size:12px; color:#8a5a00; margin-top:6px; }
+  .aibubble { background:#fff; border:1.5px solid var(--ink); border-radius:14px 14px 14px 4px; padding:14px; margin-bottom:12px; font-size:14px; line-height:1.5; }
+  .aictx { font-size:11px; color:var(--gray); border:1px dashed var(--line); border-radius:8px; padding:6px 10px; margin-bottom:14px; }
+  .photo { width:64px; height:64px; border-radius:50%; border:2px dashed var(--line); display:flex; align-items:center; justify-content:center; color:var(--gray); font-size:10px; text-align:center; flex:0 0 auto; }
+  .home-head { display:flex; gap:12px; align-items:center; margin-bottom:16px; }
+  .state { border:1.5px solid var(--line); border-left:6px solid var(--ink); border-radius:10px; background:#fff; padding:14px; margin-bottom:12px; }
+  .state h3 { font-size:15px; margin-bottom:4px; }
+  .state p { font-size:13px; color:var(--gray); }
+  .askbar { display:flex; gap:8px; margin-top:16px; }
+  .askbar input { flex:1; padding:12px; border:1.5px solid var(--line); border-radius:10px; font-size:14px; }
+  .askbar button { padding:12px 16px; border:2px solid var(--ink); background:var(--ink); color:#fff; border-radius:10px; cursor:pointer; }
+  .slot { display:inline-block; padding:10px 14px; border:1.5px solid var(--line); border-radius:10px; background:#fff; font-size:13px; margin:0 8px 8px 0; cursor:pointer; }
+  .slot.busy { color:var(--gray); border-style:dashed; text-decoration:line-through; }
+  .alt { font-size:12px; background:#fff8ea; border:1px dashed #8a5a00; border-radius:8px; padding:10px; margin-bottom:10px; display:none; }
+  .alt.open { display:block; }
+  .kv { display:flex; justify-content:space-between; font-size:13px; padding:6px 0; border-bottom:1px dashed var(--line); }
+  .kv:last-child { border-bottom:none; }
+  .share { display:flex; align-items:flex-start; gap:8px; font-size:13px; padding:6px 0; }
+  .share input { margin-top:2px; }
+  .nope { font-size:12px; color:var(--gray); padding:4px 0 0 22px; }
+  .badge { display:inline-block; font-size:11px; font-weight:700; border:2px solid #1a5a1a; color:#1a5a1a; border-radius:6px; padding:2px 8px; margin-bottom:10px; }
+  .stars { display:flex; gap:8px; margin:12px 0; }
+  .star { width:40px; height:40px; border:1.5px solid var(--line); border-radius:10px; background:#fff; font-size:18px; cursor:pointer; }
+  .star.on { background:var(--ink); color:#fff; border-color:var(--ink); }
+  .tl { border-left:2px solid var(--line); margin-left:8px; padding-left:16px; }
+  .tl .ev { position:relative; margin-bottom:16px; }
+  .tl .ev::before { content:""; position:absolute; left:-22px; top:4px; width:10px; height:10px; border-radius:50%; background:var(--ink); }
+  .tl .ev.old::before { background:#fff; border:2px solid var(--line); }
+  .note { font-size:11px; color:var(--gray); margin-top:18px; text-align:center; }
+  textarea { width:100%; min-height:70px; padding:10px; border:1.5px solid var(--line); border-radius:8px; font-size:13px; }
+</style>
+</head>
+<body>
+<div class="phone">
+
+  <!-- H01 — Home (до) -->
+  <section class="screen active" id="h01">
+    <div class="tag">H01 · Home</div>
+    <div class="home-head">
+      <div class="photo">фото<br>Бони</div>
+      <div><h1 style="margin-bottom:2px;">Боня</h1><p class="sub" style="margin:0;">Собака · корги · ~13 кг</p></div>
+    </div>
+    <div class="state"><h3>На сегодня нет активных задач</h3><p>Если что-то нужно — просто скажите Pet AI.</p></div>
+    <div class="card"><h3>Важно учитывать</h3><p>Боится сильной сушки · <span style="color:var(--gray)">источник: вы</span></p></div>
+    <div class="askbar">
+      <input id="need" value="Боню пора привести в порядок" readonly>
+      <button onclick="go('ai01')">➤</button>
+    </div>
+    <div class="note">low-fi prototype · Grooming Care Loop · TEST_CANDIDATE</div>
+  </section>
+
+  <!-- AI01 — Contextual Response -->
+  <section class="screen" id="ai01">
+    <div class="tag">AI01 · Pet AI</div>
+    <div class="aictx">Контекст: Боня · Home · история груминга · память</div>
+    <div class="aibubble">
+      Понял: Боню пора к грумеру.<br><br>
+      В последний раз Боня была на груминге <b>12 июня у Анны</b> — прошло 7 недель, как раз пора.<br><br>
+      Помню, что Боня <b>боится сильной сушки</b> — учту это при подборе.
+    </div>
+    <button class="btn" onclick="go('ai02')">Подобрать специалиста</button>
+    <button class="btn link" onclick="go('h01')">Не сейчас</button>
+  </section>
+
+  <!-- AI02 — Previous Relationship Decision -->
+  <section class="screen" id="ai02">
+    <div class="tag">AI02 · Pet AI</div>
+    <div class="aibubble">
+      В прошлый раз Боня была у <b>Анны</b>, и вы хорошо оценили визит. Анна работает с корги и уже знает Боню.<br><br>
+      Повторить у неё или посмотреть других?
+    </div>
+    <button class="btn" onclick="pickProvider('anna'); go('m02')">Повторить у Анны</button>
+    <button class="btn ghost" onclick="go('m01')">Подобрать другого</button>
+    <div class="note">Relationship before marketplace: проверенный специалист предлагается первым</div>
+  </section>
+
+  <!-- M01 — AI Matching (max 3 curated) -->
+  <section class="screen" id="m01">
+    <div class="tag">M01 · Подбор Pet AI · 3 варианта</div>
+    <p class="sub">Не каталог — три осмысленных варианта под Боню: груминг корги, ~13 кг, боится сильной сушки.</p>
+
+    <div class="card clickable" onclick="pickProvider('anna'); go('m02')">
+      <h3>Анна · персональный грумер</h3>
+      <div class="why">Почему подходит: уже стригла Боню 12 июня, вы оценили визит положительно. Знает, что Боня боится сильной сушки.</div>
+      <div class="kv"><span>Цена</span><b>3 500 ₽</b></div>
+      <div class="kv"><span>Расстояние</span><b>1,2 км</b></div>
+      <div class="kv"><span>Ближайшее время</span><b>завтра 14:00</b></div>
+      <div class="kv"><span>Доверие</span><b>4,9 · 87 отзывов</b></div>
+      <p class="trade">Trade-off: на ~15% дороже среднего по городу.</p>
+    </div>
+
+    <div class="card clickable" onclick="pickProvider('olga'); go('m02')">
+      <h3>Ольга · грумер, тревожные собаки</h3>
+      <div class="why">Почему подходит: специализация — тревожные собаки, бережная сушка без компрессора. Прямо закрывает особенность Бони.</div>
+      <div class="kv"><span>Цена</span><b>2 800 ₽</b></div>
+      <div class="kv"><span>Расстояние</span><b>3,5 км</b></div>
+      <div class="kv"><span>Ближайшее время</span><b>сегодня 18:00</b></div>
+      <div class="kv"><span>Доверие</span><b>4,8 · 41 отзыв</b></div>
+      <p class="trade">Trade-off: далеко; Боню не знает — первый визит может занять больше времени.</p>
+    </div>
+
+    <div class="card clickable" onclick="pickProvider('salon'); go('m02')">
+      <h3>Салон «Лапушка»</h3>
+      <div class="why">Почему подходит: большой опыт с корги, есть окна сегодня, ближайший к вам.</div>
+      <div class="kv"><span>Цена</span><b>2 500 ₽</b></div>
+      <div class="kv"><span>Расстояние</span><b>800 м</b></div>
+      <div class="kv"><span>Ближайшее время</span><b>сегодня 16:30</b></div>
+      <div class="kv"><span>Доверие</span><b>4,6 · 210 отзывов</b></div>
+      <p class="trade">Trade-off: салон, а не персональный мастер; сушка стандартная — про особенность Бони нужно предупредить отдельно.</p>
+    </div>
+
+    <button class="btn link" onclick="alert('Каталог — fallback. В прототипе не реализован.')">Показать весь каталог</button>
+  </section>
+
+  <!-- M02 — Provider Profile (Provider × Боня × Need) -->
+  <section class="screen" id="m02">
+    <div class="tag">M02 · Специалист × Боня × груминг</div>
+    <div class="home-head">
+      <div class="photo">фото</div>
+      <div><h1 style="margin-bottom:2px;" id="pvName">Анна</h1><p class="sub" style="margin:0;" id="pvKind">персональный грумер</p></div>
+    </div>
+    <h3 style="font-size:15px;margin-bottom:8px;">Почему <span id="pvName2">Анна</span> подходит Боне?</h3>
+    <div class="why" id="pvWhy">…</div>
+    <div class="card">
+      <div class="kv"><span>Комплексный груминг (корги)</span><b id="pvPrice">3 500 ₽</b></div>
+      <div class="kv"><span>Расстояние</span><b id="pvDist">1,2 км</b></div>
+      <div class="kv"><span>Доверие</span><b id="pvTrust">4,9 · 87 отзывов</b></div>
+    </div>
+    <h3 style="font-size:14px;margin:8px 0;">Выберите время</h3>
+    <div>
+      <span class="slot" onclick="pickSlot('завтра 14:00')">завтра 14:00</span>
+      <span class="slot busy" onclick="busySlot()">завтра 16:00</span>
+      <span class="slot" onclick="pickSlot('суббота 11:00')">сб 11:00</span>
+    </div>
+    <div class="alt" id="altBox">
+      Слот «завтра 16:00» занят. Ближайшие варианты: <b>завтра 14:00</b> или <b>сб 11:00</b> у этого специалиста · сегодня 18:00 у Ольги (другой специалист).
+    </div>
+    <div class="note">Профиль собран под контекст: специалист × Боня × текущая задача. Не generic-страница из каталога.</div>
+  </section>
+
+  <!-- B01 — Booking Review -->
+  <section class="screen" id="b01">
+    <div class="tag">B01 · Проверка записи</div>
+    <h1>Проверьте запись</h1>
+    <div class="card">
+      <div class="kv"><span>Специалист</span><b id="bkProv">Анна</b></div>
+      <div class="kv"><span>Услуга</span><b>Комплексный груминг (корги)</b></div>
+      <div class="kv"><span>Время</span><b id="bkSlot">завтра 14:00</b></div>
+      <div class="kv"><span>Цена</span><b id="bkPrice">3 500 ₽</b></div>
+    </div>
+    <div class="card">
+      <h3>Что получит специалист</h3>
+      <div class="share"><input type="checkbox" checked id="sh1"><label for="sh1">Имя, вид, порода: Боня, собака, корги</label></div>
+      <div class="share"><input type="checkbox" checked id="sh2"><label for="sh2">Вес: ~13 кг</label></div>
+      <div class="share"><input type="checkbox" checked id="sh3"><label for="sh3">Особенность: боится сильной сушки</label></div>
+      <p class="nope">Не передаётся: медицинская история, «возможная реакция на курицу» (не подтверждено), история других визитов.</p>
+    </div>
+    <button class="btn" onclick="confirmBooking()">Подтвердить запись</button>
+    <button class="btn link" onclick="go('m02')">Изменить время</button>
+    <div class="note">Передаётся только минимальный необходимый контекст — с вашего разрешения</div>
+  </section>
+
+  <!-- B02 — Confirmed (только после confirm, см. state machine) -->
+  <section class="screen" id="b02">
+    <div class="tag">B02 · Запись</div>
+    <span class="badge">СТАТУС: CONFIRMED</span>
+    <h1>Запись подтверждена</h1>
+    <p class="sub">Этот экран показывается только после фактического подтверждения (state machine прототипа: AVAILABLE → BOOKING REVIEW → CONFIRMED).</p>
+    <div class="card">
+      <div class="kv"><span>Специалист</span><b id="cfProv">Анна</b></div>
+      <div class="kv"><span>Время</span><b id="cfSlot">завтра 14:00</b></div>
+      <div class="kv"><span>Адрес</span><b>1,2 км от вас</b></div>
+    </div>
+    <div class="card"><h3>Что дальше</h3><p>Напомним перед визитом. После услуги результат специалиста вернётся в историю Бони.</p></div>
+    <button class="btn" onclick="go('r01')">(демо) Визит состоялся →</button>
+    <button class="btn link" onclick="go('h01')">На Home</button>
+  </section>
+
+  <!-- R01 — Service Result -->
+  <section class="screen" id="r01">
+    <div class="tag">R01 · Результат услуги</div>
+    <h1>Анна завершила груминг</h1>
+    <div class="card">
+      <h3>Заметка специалиста</h3>
+      <p>«Состояние шерсти хорошее. Сушили бережно, без компрессора — Боня была заметно спокойнее, чем в прошлый раз.»</p>
+      <span class="src prov">Источник: Анна (специалист)</span><span class="src">24 авг</span>
+    </div>
+    <div class="card">
+      <h3>Рекомендация</h3>
+      <p>Следующий визит — через 6–8 недель.</p>
+      <span class="src prov">Источник: Анна (специалист)</span>
+    </div>
+    <div class="note">Рекомендация специалиста хранится с её источником — это не «факт от AI»</div>
+    <button class="btn" onclick="go('r02')">Оценить визит</button>
+  </section>
+
+  <!-- R02 — Feedback -->
+  <section class="screen" id="r02">
+    <div class="tag">R02 · Ваш отзыв</div>
+    <h1>Как прошёл визит?</h1>
+    <p class="sub">Ваша оценка поможет Pet AI подбирать лучше и решит, предлагать ли Анну в следующий раз.</p>
+    <div class="stars">
+      <button class="star" onclick="rate(1)">1</button><button class="star" onclick="rate(2)">2</button><button class="star" onclick="rate(3)">3</button><button class="star" onclick="rate(4)">4</button><button class="star" onclick="rate(5)">5</button>
+    </div>
+    <textarea placeholder="Комментарий (необязательно)">Боня вернулась спокойной, спасибо за бережную сушку.</textarea>
+    <button class="btn" onclick="go('hist01')">Отправить</button>
+  </section>
+
+  <!-- HIST01 — Updated Timeline -->
+  <section class="screen" id="hist01">
+    <div class="tag">HIST01 · История Бони</div>
+    <h1>История</h1>
+    <p class="sub">Значимые события жизни Бони. Не лог приложения.</p>
+    <div class="tl">
+      <div class="ev">
+        <div class="card" style="margin-bottom:0;">
+          <h3>Груминг у Анны · 24 авг</h3>
+          <p>Комплексный груминг. Результат: шерсть в порядке, бережная сушка — Боня спокойнее. Рекомендация: следующий визит через 6–8 недель. Ваша оценка: 5.</p>
+          <span class="src prov">Источник: Анна (специалист)</span><span class="src">+ ваш отзыв</span>
+        </div>
+      </div>
+      <div class="ev old">
+        <div class="card" style="margin-bottom:0;">
+          <h3>Груминг у Анны · 12 июня</h3>
+          <p>Визит оценён положительно.</p>
+          <span class="src">Источник: вы</span>
+        </div>
+      </div>
+    </div>
+    <button class="btn" onclick="go('h01b')">На Home</button>
+  </section>
+
+  <!-- H01' — Updated Home (после loop) -->
+  <section class="screen" id="h01b">
+    <div class="tag">H01 · Home · после Care Loop</div>
+    <div class="home-head">
+      <div class="photo">фото<br>Бони</div>
+      <div><h1 style="margin-bottom:2px;">Боня</h1><p class="sub" style="margin:0;">Собака · корги · ~13 кг</p></div>
+    </div>
+    <div class="state">
+      <h3>Следующий груминг: через 6–8 недель</h3>
+      <p>Рекомендация Анны после визита 24 авг. Когда подойдёт время — предложим повторить у Анны в один шаг.</p>
+    </div>
+    <div class="card"><h3>Pet AI обновил историю Бони</h3><p>Визит, результат специалиста и ваш отзыв сохранены. Подробности — в Истории.</p></div>
+    <div class="askbar">
+      <input placeholder="Спросить Pet AI…">
+      <button onclick="alert('Демо: следующий Need будет учитывать обновлённый контекст.')">➤</button>
+    </div>
+    <div class="note">На Home — только актуальное следствие loop, а не весь массив данных</div>
+  </section>
+
+</div>
+
+<script>
+  // Prototype state machine: AVAILABLE → BOOKING REVIEW → CONFIRMED → COMPLETED
+  const state = { provider: 'anna', slot: 'завтра 14:00', booking: 'AVAILABLE', rating: 0 };
+  const providers = {
+    anna:  { name:'Анна', kind:'персональный грумер', price:'3 500 ₽', dist:'1,2 км', trust:'4,9 · 87 отзывов',
+             why:'Уже стригла Боню 12 июня, вы оценили визит положительно. Знает, что Боня боится сильной сушки, — сушит бережно. Опыт с корги.' },
+    olga:  { name:'Ольга', kind:'грумер · тревожные собаки', price:'2 800 ₽', dist:'3,5 км', trust:'4,8 · 41 отзыв',
+             why:'Специализация — тревожные собаки и бережная сушка без компрессора: прямо закрывает особенность Бони. Trade-off: Боню не знает, далеко.' },
+    salon: { name:'Салон «Лапушка»', kind:'груминг-салон', price:'2 500 ₽', dist:'800 м', trust:'4,6 · 210 отзывов',
+             why:'Большой опыт именно с корги, ближайший к вам, есть окна сегодня. Trade-off: сушка стандартная — про Боню нужно предупредить отдельно.' }
+  };
+  function go(id) {
+    if (id === 'b02' && state.booking !== 'CONFIRMED') return; // no fake confirmation
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    window.scrollTo(0,0);
+  }
+  function pickProvider(key) {
+    state.provider = key;
+    const p = providers[key];
+    document.getElementById('pvName').textContent = p.name;
+    document.getElementById('pvName2').textContent = p.name;
+    document.getElementById('pvKind').textContent = p.kind;
+    document.getElementById('pvWhy').textContent = p.why;
+    document.getElementById('pvPrice').textContent = p.price;
+    document.getElementById('pvDist').textContent = p.dist;
+    document.getElementById('pvTrust').textContent = p.trust;
+  }
+  function pickSlot(slot) {
+    state.slot = slot; state.booking = 'BOOKING REVIEW';
+    const p = providers[state.provider];
+    document.getElementById('bkProv').textContent = p.name;
+    document.getElementById('bkSlot').textContent = slot;
+    document.getElementById('bkPrice').textContent = p.price;
+    go('b01');
+  }
+  function busySlot() { document.getElementById('altBox').classList.toggle('open'); }
+  function confirmBooking() {
+    state.booking = 'CONFIRMED';
+    const p = providers[state.provider];
+    document.getElementById('cfProv').textContent = p.name;
+    document.getElementById('cfSlot').textContent = state.slot;
+    go('b02');
+  }
+  function rate(n) {
+    state.rating = n;
+    document.querySelectorAll('.star').forEach((s,i) => s.classList.toggle('on', i < n));
+  }
+</script>
+</body>
+</html>
