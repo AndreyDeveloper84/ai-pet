@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pet AI — low-fi prototype (O01→O04→H01) · TEST_CANDIDATE</title>
+<!--
+  Pet AI — throwaway clickable low-fi prototype для owner UX tests.
+  Статус: TEST_CANDIDATE (D-13). НЕ production code. НЕ отражает выбор стека (Q-03 open).
+  Воплощённые UX-решения (D-15):
+  - короткий onboarding, без процента заполненности;
+  - CTA «Сохранить {имя}» вместо «Всё верно»;
+  - uncertain facts остаются uncertain (provenance chips);
+  - Home не утверждает «Всё хорошо»;
+  - нет автоматических Care items из неполных данных (нет «следующей вакцинации»);
+  - AI — глобальный contextual layer (центральное действие), не пятая вкладка.
+-->
+<style>
+  :root {
+    --ink: #222; --gray: #777; --line: #bbb; --bg: #f2f2f2; --card: #fff;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, "Segoe UI", Roboto, sans-serif; }
+  body { background: #ddd; display: flex; justify-content: center; padding: 24px; }
+  .phone { width: 375px; min-height: 720px; background: var(--bg); border: 2px solid var(--ink); border-radius: 24px; overflow: hidden; position: relative; }
+  .screen { display: none; padding: 24px 20px 96px; min-height: 720px; }
+  .screen.active { display: block; }
+  .tag { font-size: 11px; color: var(--gray); letter-spacing: .08em; text-transform: uppercase; margin-bottom: 12px; }
+  h1 { font-size: 22px; margin-bottom: 12px; }
+  p.sub { color: var(--gray); font-size: 14px; line-height: 1.5; margin-bottom: 24px; }
+  .btn { display: block; width: 100%; padding: 14px; margin-top: 12px; border: 2px solid var(--ink); background: var(--ink); color: #fff; font-size: 15px; border-radius: 10px; cursor: pointer; text-align: center; }
+  .btn.ghost { background: transparent; color: var(--ink); }
+  .btn.link { border: none; background: none; color: var(--gray); text-decoration: underline; font-size: 13px; }
+  .field { margin-bottom: 14px; }
+  .field label { display: block; font-size: 12px; color: var(--gray); margin-bottom: 4px; }
+  .field input, .field textarea { width: 100%; padding: 12px; border: 1.5px solid var(--line); border-radius: 8px; font-size: 15px; background: #fff; }
+  .field textarea { min-height: 110px; resize: vertical; }
+  .chips { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 18px; }
+  .chip { padding: 8px 12px; border: 1.5px solid var(--line); border-radius: 999px; font-size: 13px; background: #fff; cursor: pointer; }
+  .chip.on { border-color: var(--ink); background: var(--ink); color: #fff; }
+  .card { background: var(--card); border: 1.5px solid var(--line); border-radius: 12px; padding: 14px; margin-bottom: 12px; }
+  .card h3 { font-size: 15px; margin-bottom: 6px; }
+  .card p { font-size: 14px; line-height: 1.45; }
+  .src { display: inline-block; font-size: 11px; color: var(--gray); border: 1px solid var(--line); border-radius: 6px; padding: 2px 6px; margin-top: 8px; margin-right: 4px; }
+  .src.unc { color: #8a5a00; border-style: dashed; }
+  .photo { width: 84px; height: 84px; border-radius: 50%; border: 2px dashed var(--line); display: flex; align-items: center; justify-content: center; color: var(--gray); font-size: 11px; text-align: center; }
+  .home-head { display: flex; gap: 14px; align-items: center; margin-bottom: 20px; }
+  .state { border: 1.5px solid var(--line); border-left: 6px solid var(--ink); border-radius: 10px; background: #fff; padding: 14px; margin-bottom: 12px; }
+  .state h3 { font-size: 15px; margin-bottom: 4px; }
+  .state p { font-size: 13px; color: var(--gray); }
+  .tabbar { position: absolute; bottom: 0; left: 0; right: 0; height: 72px; background: #fff; border-top: 1.5px solid var(--line); display: flex; align-items: stretch; }
+  .tab { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 11px; color: var(--gray); cursor: pointer; gap: 3px; }
+  .tab .ic { width: 22px; height: 22px; border: 1.5px solid var(--line); border-radius: 6px; }
+  .tab.on { color: var(--ink); font-weight: 600; }
+  .tab.on .ic { border-color: var(--ink); }
+  .tab.ai { flex: 0 0 76px; }
+  .tab.ai .aibtn { width: 52px; height: 52px; border-radius: 50%; background: var(--ink); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; margin-top: -26px; border: 3px solid #fff; box-shadow: 0 0 0 1.5px var(--ink); }
+  .sheet { position: absolute; left: 0; right: 0; bottom: 0; background: #fff; border-top: 2px solid var(--ink); border-radius: 18px 18px 0 0; padding: 20px; display: none; z-index: 5; }
+  .sheet.open { display: block; }
+  .sheet .grab { width: 40px; height: 4px; background: var(--line); border-radius: 2px; margin: 0 auto 14px; }
+  .ctx { font-size: 12px; color: var(--gray); border: 1px dashed var(--line); border-radius: 8px; padding: 8px 10px; margin-bottom: 12px; }
+  .sugg { display: block; width: 100%; text-align: left; padding: 12px; border: 1.5px solid var(--line); border-radius: 10px; background: #fff; font-size: 14px; margin-bottom: 8px; cursor: pointer; }
+  .mic { display: inline-flex; align-items: center; gap: 8px; border: 1.5px solid var(--line); border-radius: 999px; padding: 10px 16px; background: #fff; font-size: 13px; cursor: pointer; }
+  .note { font-size: 11px; color: var(--gray); margin-top: 20px; text-align: center; }
+</style>
+</head>
+<body>
+<div class="phone" id="phone">
+
+  <!-- O01 — Зачем Pet AI -->
+  <section class="screen active" id="o01">
+    <div class="tag">O01 · Onboarding</div>
+    <h1>Pet AI знает вашего питомца</h1>
+    <p class="sub">Ассистент, который помнит историю питомца, помогает понять, что делать дальше, и подбирает проверенных специалистов — грумеров и врачей.</p>
+    <div class="card"><h3>Помнит</h3><p>История, особенности и важные факты о питомце — всегда под рукой.</p></div>
+    <div class="card"><h3>Подсказывает</h3><p>Что сделать дальше: от «пора к грумеру» до «стоит показать врачу».</p></div>
+    <div class="card"><h3>Организует</h3><p>Подберёт специалиста и поможет записаться. Результат вернётся в историю питомца.</p></div>
+    <button class="btn" onclick="go('o02')">Начать</button>
+    <div class="note">low-fi prototype · TEST_CANDIDATE</div>
+  </section>
+
+  <!-- O02 — Кто ваш питомец -->
+  <section class="screen" id="o02">
+    <div class="tag">O02 · Кто ваш питомец</div>
+    <h1>Кто ваш питомец?</h1>
+    <p class="sub">Пара базовых фактов — остальное можно рассказать своими словами на следующем шаге.</p>
+    <div class="field"><label>Имя</label><input id="petName" type="text" placeholder="Например, Боня" value="Боня"></div>
+    <div class="field"><label>Вид</label>
+      <div class="chips">
+        <span class="chip on">Собака</span>
+        <span class="chip" title="В MVP — только собаки">Кошка (позже)</span>
+        <span class="chip" title="В MVP — только собаки">Другое (позже)</span>
+      </div>
+    </div>
+    <div class="field"><label>Порода (необязательно)</label><input type="text" placeholder="Например, корги"></div>
+    <div class="field"><label>Возраст или дата рождения (необязательно)</label><input type="text" placeholder="Например, 3 года"></div>
+    <button class="btn" onclick="go('o03')">Продолжить</button>
+    <button class="btn link" onclick="go('o03')">Заполнить позже</button>
+  </section>
+
+  <!-- O03 — Расскажите о питомце -->
+  <section class="screen" id="o03">
+    <div class="tag">O03 · Расскажите о питомце</div>
+    <h1>Расскажите о <span class="nm">питомце</span></h1>
+    <p class="sub">Своими словами — как рассказали бы другу. Привычки, здоровье, что любит и чего боится. Это поможет Pet AI учитывать контекст, а не переспрашивать.</p>
+    <div class="field">
+      <textarea placeholder="Например: «Боне 3 года, корги. Боится сильной сушки в груминг-салоне. Кажется, была реакция на курицу. Прививки делали весной…»"></textarea>
+    </div>
+    <button class="mic" type="button">🎙 Рассказать голосом</button>
+    <button class="btn" onclick="go('o04')">Продолжить</button>
+    <button class="btn link" onclick="go('o04')">Пропустить</button>
+  </section>
+
+  <!-- O04 — Вот что я понял -->
+  <section class="screen" id="o04">
+    <div class="tag">O04 · Вот что я понял</div>
+    <h1>Вот что я понял о <span class="nm">питомце</span></h1>
+    <p class="sub">Проверьте перед сохранением. То, в чём мы не уверены, отмечено отдельно — это не станет фактом без подтверждения.</p>
+    <div class="card">
+      <h3>Профиль</h3>
+      <p>Собака · корги · 3 года</p>
+      <span class="src">Источник: вы · сейчас</span>
+    </div>
+    <div class="card">
+      <h3>Важно учитывать</h3>
+      <p>Боится сильной сушки</p>
+      <span class="src">Источник: вы</span><span class="src">Актуально</span>
+    </div>
+    <div class="card">
+      <h3>Требует уточнения</h3>
+      <p>Возможная реакция на курицу</p>
+      <span class="src unc">Источник: вы</span><span class="src unc">Не подтверждено</span>
+    </div>
+    <button class="btn" id="saveBtn" onclick="go('h01')">Сохранить Боню</button>
+    <button class="btn ghost" onclick="go('o03')">Дополнить рассказ</button>
+  </section>
+
+  <!-- H01 — Home -->
+  <section class="screen" id="h01" style="padding-bottom:96px;">
+    <div class="tag">H01 · Home</div>
+    <div class="home-head">
+      <div class="photo">фото<br>питомца</div>
+      <div>
+        <h1 style="margin-bottom:2px;" class="nm">Боня</h1>
+        <p class="sub" style="margin:0;">Собака · корги · 3 года</p>
+      </div>
+    </div>
+    <div class="state">
+      <h3>На сегодня нет активных задач</h3>
+      <p>Это не значит, что «всё хорошо» — просто сейчас ничего не требует вашего действия. Если что-то беспокоит — спросите Pet AI.</p>
+    </div>
+    <div class="card">
+      <h3>Важно учитывать</h3>
+      <p>Боится сильной сушки · <span style="color:var(--gray)">источник: вы</span></p>
+      <p style="margin-top:6px;">Возможная реакция на курицу · <span style="color:#8a5a00">требует уточнения</span></p>
+    </div>
+    <div class="note">Нет запланированных событий. Мы не создаём напоминания из неполных данных.</div>
+  </section>
+
+  <!-- Tab bar: 4 зоны + центральный AI (не пятая вкладка) -->
+  <nav class="tabbar" id="tabbar" style="display:none;">
+    <div class="tab on" data-t="home"><span class="ic"></span>Home</div>
+    <div class="tab" data-t="history"><span class="ic"></span>History</div>
+    <div class="tab ai" onclick="toggleSheet(true)"><span class="aibtn">AI</span></div>
+    <div class="tab" data-t="care"><span class="ic"></span>Care</div>
+    <div class="tab" data-t="profile"><span class="ic"></span>Profile</div>
+  </nav>
+
+  <!-- AI contextual sheet -->
+  <div class="sheet" id="sheet">
+    <div class="grab" onclick="toggleSheet(false)"></div>
+    <div class="tag">Pet AI · контекст: Home, <span class="nm">Боня</span></div>
+    <div class="ctx">Учитываю: профиль, важное о питомце (боится сильной сушки — источник: вы), историю. Не переспрослю то, что уже знаю.</div>
+    <button class="sugg">«Боню пора привести в порядок» — подобрать грумера</button>
+    <button class="sugg">«Боня второй день чешет ухо» — разобраться, что делать</button>
+    <button class="sugg">Задать свой вопрос…</button>
+    <button class="btn link" onclick="toggleSheet(false)">Закрыть</button>
+  </div>
+
+</div>
+
+<script>
+  const tabs = { home: 'h01', history: 'stubHistory', care: 'stubCare', profile: 'stubProfile' };
+  function petName() { return (document.getElementById('petName').value || 'Боня').trim(); }
+  function applyName() {
+    const n = petName();
+    document.querySelectorAll('.nm').forEach(e => e.textContent = n);
+    document.getElementById('saveBtn').textContent = 'Сохранить ' + n;
+  }
+  function go(id) {
+    applyName();
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    document.getElementById('tabbar').style.display = (id === 'h01') ? 'flex' : 'none';
+    toggleSheet(false);
+  }
+  function toggleSheet(open) {
+    document.getElementById('sheet').classList.toggle('open', open);
+  }
+  document.getElementById('petName').addEventListener('input', applyName);
+  document.querySelectorAll('.tab[data-t]').forEach(t => t.addEventListener('click', () => {
+    document.querySelectorAll('.tab[data-t]').forEach(x => x.classList.remove('on'));
+    t.classList.add('on');
+    if (t.dataset.t !== 'home') { t.classList.remove('on'); document.querySelector('.tab[data-t=home]').classList.add('on'); }
+    go('h01'); // low-fi: остальные зоны — заглушки, возвращаем на Home
+  }));
+  applyName();
+</script>
+</body>
+</html>

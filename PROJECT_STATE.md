@@ -19,9 +19,8 @@
 
 ## Active work
 
-- Clickable low-fi prototype `O01 → O02 → O03 → O04 → H01` (`prototypes/onboarding-low-fi/`, TEST_CANDIDATE).
-- Owner UX test script v1 (`research/owner-interviews/`).
-- Ayla read-only inventory (области будущего аудита, без проектирования под код Ayla).
+- Подготовка к owner UX tests: prototype и test script v1 готовы (ожидают Q-05 и файлы макетов).
+- Grooming Care Loop prototype (PET-3) — следующий UX-артефакт.
 
 ## Blocked work
 
@@ -47,7 +46,8 @@
 ## Recent completed work
 
 - 2026-08-30: workspace, Git repo, документация v0.1 (product/research/UX/AI/marketplace/integrations/decisions).
-- 2026-08-30: D-13 (статусы design artifacts, Q-01 closed), D-14 (safety boundaries FROZEN v0.1 частично, Q-12 closed), D-15 (UX-коррекции onboarding/Home); designs manifest; baseline commit.
+- 2026-08-30: D-13 (статусы design artifacts, Q-01 closed), D-14 (safety boundaries FROZEN v0.1 частично, Q-12 closed), D-15 (UX-коррекции onboarding/Home); designs manifest; baseline commit `6fd6dd8`.
+- 2026-08-30: clickable low-fi prototype O01→O04→H01 (`prototypes/onboarding-low-fi/`, TEST_CANDIDATE); owner UX test script v1 (`research/owner-interviews/ux-test-script-v1.md`); Ayla read-only inventory (`docs/04-architecture/ayla-reuse-inventory.md`).
 
 ## Linear
 
