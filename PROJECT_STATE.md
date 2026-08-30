@@ -1,60 +1,65 @@
 # PROJECT STATE — Pet AI
 
-> Обновляется после каждого значимого изменения. Последнее обновление: 2026-08-30 (UX VALIDATION + PROVIDER RESEARCH пакет готов).
+> Обновляется после каждого значимого изменения. Последнее обновление: 2026-08-30 (Ayla discovery cycle 1 завершён).
 
 ## Current phase
 
-**UX VALIDATION + PROVIDER RESEARCH.** Операционный пакет полностью готов. Следующий шаг — реальные сессии (требуют owner action). Новые вертикалы, крупные экраны и production code — стоп до UX FREEZE v0.2.
+**UX VALIDATION + PROVIDER RESEARCH** — три параллельные дорожки. Новые продуктовые решения без пользовательских данных не принимаются.
 
-## Current gate
+## Gates
 
 | Gate | Статус |
 |---|---|
-| PRODUCT GATE | ✅ Product Concept v0.1 — FROZEN |
-| UX GATE | ⛔ Активный. Артефакты готовы; далее: owner tests → findings triage → corrections → UX FREEZE v0.2 (`docs/02-ux/ux-validation-gate.md`) |
-| DOMAIN GATE | ⛔ Не начат (domain extraction после freeze) |
-| REUSE GATE | ⛔ Inventory ✅ + audit plan ✅; аудит — после domain extraction |
+| PRODUCT GATE | ✅ FROZEN v0.1 |
+| UX GATE | ⛔ Активный: ожидает owner tests (wave 1: P-01→P-03) |
+| DOMAIN GATE | ⛔ После UX FREEZE v0.2 |
+| REUSE GATE | ⛔ Discovery ✅ (не binding); audit — после domain extraction |
 | ARCHITECTURE GATE | ⛔ Не начат |
-| DEVELOPMENT GATE | ⛔ Закрыт |
+| DEVELOPMENT GATE | ⛔ **BLOCKED** — engineering implementation запрещён |
 
-## Готовность к сессиям (чеклист)
+## TRACK A — Owner Validation
 
-- ✅ Owner: recruiting plan (sample, exclusions, 3 message variants), session runbook (A/B/C + распределение участников), session template, findings register (severity S0–S4, статусы)
-- ✅ UX gate criteria (`ux-validation-gate.md`)
-- ✅ Provider: groomer guide, vet clinic guide, recruiting messages
-- ✅ Backlog mapping artifacts → Linear (`linear-backlog-plan.md`)
-- ✅ Ayla reuse audit plan (без архитектурного выбора)
-- ⛔ Реальные респонденты и интервью — owner action
+- Статус: **готов к старту, ожидает респондентов.** Wave 1 = P-01→P-03 (не ждём полного набора).
+- Пакет: recruiting plan, runbook, template, register, 3 prototypes + 3 scripts.
+- Данных сессий: 0. Wave-отчётов нет.
+- После wave 1: session records → findings → triage (S0–S4, связь с гипотезами, evidence ≠ interpretation) → отчёт UX VALIDATION WAVE 1 владельцу. Prototype до triage не трогаем.
 
-## Active work
+## TRACK B — Provider Research
 
-- Ожидание запуска owner tests и provider interviews (оба трека готовы к старту).
+- Статус: **готов к старту.** Wave 1 = 2 грумера + 1 клиника.
+- Пакет: 2 interview guides + recruiting messages.
+- Данных: 0. После wave 1: отчёт PROVIDER RESEARCH WAVE 1 (FACT/OBSERVATION/PATTERN/HYPOTHESIS/OPEN QUESTION), без выводов о рынке.
+- Фокус-проверки: availability, instant booking, Pet Context, capabilities, completion/result, повторная запись, CRM, дублирование данных.
+
+## TRACK C — Ayla Technical Discovery
+
+- Статус: **cycle 1 завершён (read-only, NON-BINDING).**
+- Артефакты: `docs/04-architecture/ayla-discovery-report.md` (14 областей: 12 EXISTS, 2 PARTIAL), `ayla-ai-flow.md`, `ayla-booking-flow.md`.
+- Ключевые факты: memory provenance в Ayla богаче MVP-правил Pet AI; booking Ayla не имеет request mode, slot hold и completion result payload; canonical payments/reviews — во внешнем сервисе; deprecated pipeline — мёртвый код; сквозная tenant-coupling.
+- Далее: аудит матрицы — только после domain extraction (REUSE GATE).
 
 ## Blocked work
 
-- Production feature code — DEVELOPMENT GATE закрыт (открывает только owner).
-- Domain extraction — после UX FREEZE v0.2.
-- Ayla full reuse audit — после domain extraction.
-- Новые вертикалы/экраны — стоп до UX FREEZE v0.2.
+- Production code, Pet DB schema, Django models, migrations, API, production frontend, vector memory, matching engine, booking implementation, Vetmanager adapter — **BLOCKED (DEVELOPMENT GATE)** даже при очевидном reuse.
 
-## Требует реального действия владельца
+## Требует действия владельца
 
-1. **Набор респондентов** — рассылка recruiting messages (3 варианта готовы, `research/owner-interviews/recruiting-plan-v1.md`).
-2. **Provider outreach** — отправка приглашений грумерам/клиникам (`research/provider-interviews/recruiting-messages-v1.md`).
-3. **Firebase key rotation** (`docs/04-architecture/security-note-firebase-key.md`).
-4. **Linear**: Team `Pet AI` (PET) + Project `Pet AI — MVP` — после создания синхронизирую backlog mapping.
+1. Набор P-01→P-03 (recruiting messages готовы) и запуск сессий.
+2. Provider outreach (2 грумера + 1 клиника).
+3. Firebase key rotation (`security-note-firebase-key.md`).
+4. Linear team/project (не blocker).
 
 ## Next 3 actions
 
-1. Owner tests (5–8 сессий) по runbook — после набора респондентов.
-2. Provider interviews (грумеры + клиники) — параллельно.
-3. Findings triage после первой партии (2–3 сессии) → коррекции → RETEST.
+1. UX VALIDATION WAVE 1 — triage после сессий P-01→P-03 (как только состоятся).
+2. PROVIDER RESEARCH WAVE 1 — после интервью.
+3. Track C: при появлении Linear — синхронизация backlog; discovery обновлять по запросу (per-tenant path, promptreg, replay — остались непокрытыми).
 
 ## Recent completed work
 
-- 2026-08-30: 3 prototypes + 3 test scripts; D-01…D-17; shell matrix; commits `6fd6dd8`…`445be11`.
-- 2026-08-30: UX validation ops-пакет (recruiting/runbook/template/register/gate), provider interview packs (2 гайда + сообщения), Ayla reuse audit plan, backlog mapping.
+- 2026-08-30: UX validation ops pack (`083b4b3`); Ayla discovery cycle 1 (этот цикл).
+- Ранее: 3 prototypes, 3 test scripts, D-01…D-17, shell matrix, security note.
 
 ## Linear
 
-- Ожидает ручного создания. Mapping готов: `docs/08-decisions/linear-backlog-plan.md` (PET-1…PET-11 + artifacts mapping). Альтернативный трекер не создаётся.
+- Ожидает ручного создания Team `Pet AI (PET)` + Project `Pet AI — MVP`. Mapping готов (`linear-backlog-plan.md`, PET-1…PET-11). Не blocker.
