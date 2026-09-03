@@ -70,10 +70,14 @@ Findings:
   Violated invariant: «AI не переспрашивает уже известное» (Context before questions, применительно к только что полученным ответам intake); принцип adaptive intake.
   Severity: S2-CANDIDATE. Why: подрывает ключевое отличие intake от анкеты (V2) именно на safety-вопросах.
   Requires owner/UX decision: no (направление очевидно: ветвление/пропуск шага 4 по ответу шага 3), но изменение prototype — только через triage.
+  **Статус: DEFERRED TO WAVE 1 TRIAGE (PET-16). NON-BLOCKING FOR P-02 (final freeze review).**
+  Rationale: разбор реализации показал, что это conversational awkwardness, а не safety-проблема. Шаг 4 («выраженная вялость») задаётся ВСЕМ, кто не выбыл в emergency раньше, — red flag не может быть пропущен из-за ветвления. Ответ «Вялая» на шаге 3 не должен менять urgency по существующей demo-логике (escalation привязана только к выраженной вялости — шаг 4, RESEARCH REQUIRED); привязывать escalation к шагу 3 означало бы изобрести новый medical threshold (запрещено). «Вялая» → «выраженной вялости нет» — валидная градация тяжести, не противоречие. Urgency не занижается, emergency path срабатывает, ложного medical conclusion нет.
+  Validation purpose: P-02 (VE2) покажет, замечают ли респонденты повтор и воспринимают ли его как «анкету» (V2), а VE3b — влияет ли он на понимание urgency. Это user evidence question, а не consistency fix.
 - **VUX-011** — Evidence: счётчик «шаг N из 6» на каждом экране intake.
   Violated invariant: потенциально V2 («не анкета»); явная нумерация может усиливать формальное восприятие (или наоборот, снижать тревогу предсказуемостью).
   Severity: S3-CANDIDATE / UNCLEAR. Why: обе интерпретации правдоподобны — это вопрос к user tests, не к аудиту.
   Requires owner/UX decision: no.
+  **Статус: DEFERRED TO PET-16. NON-BLOCKING FOR P-02** — это по существу validation question (V2, VE2): P-02 и должен показать, усиливает ли счётчик восприятие «анкеты» или снижает тревогу.
 
 Проверено и соответствует:
 
@@ -109,9 +113,11 @@ Findings:
   Violated invariant: D-16 (полнота UX representation Care Decision — без проектирования DB).
   Severity: S3-CANDIDATE / UNCLEAR. Why: пользователь не видит, какая компетенция нужна, до matching; возможно, это осознанное упрощение low-fi.
   Requires owner/UX decision: no (уточнить при UX FREEZE).
+  **Статус: DEFERRED TO UX FREEZE REVIEW. NON-BLOCKING FOR P-02** — required capability материализуется на VM01/VM02 как поле «Компетенция» с объяснением «почему подходит»; comprehension competence rule проверяется на VE5. Представление capability внутри Care Decision — вопрос IA при UX FREEZE, не blocker.
 - **VUX-012** — Evidence: domain-термин «Care Decision» виден в теге экрана («VAI03 · Care Decision»).
   Violated invariant: правило 12 (domain language не обязана попадать в UI). В low-fi теги — scaffolding, но при переносе в hi-fi термин не должен утечь в пользовательский UI.
   Severity: S3-CANDIDATE. Requires owner/UX decision: no.
+  **Статус: DEFERRED TO UX FREEZE REVIEW. NON-BLOCKING FOR P-02** — теги экранов (ID + название) видимы во всех low-fi prototypes по конвенции тестовых артефактов; пользовательский смысл экрана дублируется человеческой структурой «что известно → срочность → почему → действие». Утечку domain-терминов закрыть при UX FREEZE/hi-fi, не в low-fi build.
 
 Проверено и соответствует:
 
@@ -217,10 +223,12 @@ Findings:
   Violated invariant: консистентность состояния (правило 8 по духу: copy не должна описывать состояние, которое ещё не наступило).
   Severity: S3-CANDIDATE. Candidate direction: «будет добавлено в Care без изменений» либо CTA «Посмотреть план Care».
   Requires owner/UX decision: no.
+  **Статус: DEFERRED TO PET-16. NON-BLOCKING FOR P-02** — copy-несогласованность не искажает safety/provenance: источник назначения (врач) на экране явен, V6 проверяет именно различение врач/AI/Care; реакция респондента на эту последовательность — данные для triage.
 - **VUX-009** — Evidence: «…спросите, объясню словами врача».
   Violated invariant: D-14 (AI не должен выдавать свою интерпретацию за слова врача — у AI есть только текст заключения).
   Severity: S3-CANDIDATE. Candidate direction: «объясню простыми словами, не меняя смысла заключения».
   Requires owner/UX decision: no.
+  **Статус: DEFERRED TO PET-16. NON-BLOCKING FOR P-02** — рядом стоит чип «Объяснение AI · не медицинский факт» и блок «AI не меняет лечение»; семантическая рамка экрана не создаёт attribution к врачу. Если респондент на P-02 припишет объяснение врачу — это S-фиксируемый сигнал к коррекции.
 
 Проверено и соответствует:
 
@@ -280,21 +288,21 @@ Findings:
 
 ### Findings register (VUX)
 
-| ID | Screen | Severity (pre-validation, not user evidence) | Owner/UX decision |
-|---|---|---|---|
-| VUX-001 | VAI03 | **S0-CANDIDATE** — «воспаление» в блоке «Почему» читается как AI-заключение | yes (safety copy) |
-| VUX-002 | VAI02 | S2-CANDIDATE — вопрос о вялости не учитывает предыдущий ответ | no |
-| VUX-003 | VAI03 | S2-CANDIDATE — red-flag блок скрыт именно в TODAY | yes (safety copy) |
-| VUX-004 | VAI03 | S2-CANDIDATE — primary CTA в OBSERVATION ведёт в marketplace против рекомендации | yes |
-| VUX-005 | VM01/VM02 | **S1-CANDIDATE** — verification/trust claims без provenance и без модели верификации | yes |
-| VUX-006 | VB01 | S2-CANDIDATE — ядро мед. контекста снимается checkbox молча | yes |
-| VUX-007 | VC01 | **S1-CANDIDATE** — care-инструкция без источника внутри плана | yes |
-| VUX-008 | VR01 | S3-CANDIDATE — «добавлено в Care» vs CTA «Сформировать план» | no |
-| VUX-009 | VR01 | S3-CANDIDATE — «объясню словами врача» | no |
-| VUX-010 | VB02 | S3-CANDIDATE — нет состояния CONTEXT AVAILABLE | yes (минорное) |
-| VUX-011 | VAI02 | S3-CANDIDATE — счётчик «шаг N из 6» и восприятие анкеты | no (к user tests) |
-| VUX-012 | VAI03 | S3-CANDIDATE — domain-термин «Care Decision» в UI-теге | no |
-| VUX-013 | VAI03 | S3-CANDIDATE — required capability не представлена на экране Care Decision | no |
+| ID | Screen | Severity (pre-validation, not user evidence) | Owner/UX decision | Final disposition (freeze review) |
+|---|---|---|---|---|
+| VUX-001 | VAI03 | **S0-CANDIDATE** — «воспаление» в блоке «Почему» читается как AI-заключение | yes (safety copy) | **RESOLVED BEFORE P-02** (build v1) |
+| VUX-002 | VAI02 | S2-CANDIDATE — вопрос о вялости не учитывает предыдущий ответ | no | **DEFERRED TO PET-16** (non-blocking; rationale в записи finding) |
+| VUX-003 | VAI03 | S2-CANDIDATE — red-flag блок скрыт именно в TODAY | yes (safety copy) | **RESOLVED BEFORE P-02** (build v1) |
+| VUX-004 | VAI03 | S2-CANDIDATE — primary CTA в OBSERVATION ведёт в marketplace против рекомендации | yes | **RESOLVED BEFORE P-02** (build v1) |
+| VUX-005 | VM01/VM02 | **S1-CANDIDATE** — verification/trust claims без provenance и без модели верификации | yes | **RESOLVED BEFORE P-02** (build v1) |
+| VUX-006 | VB01 | S2-CANDIDATE — ядро мед. контекста снимается checkbox молча | yes | **RESOLVED BEFORE P-02** (build v1, validation hypothesis) |
+| VUX-007 | VC01 | **S1-CANDIDATE** — care-инструкция без источника внутри плана | yes | **RESOLVED BEFORE P-02** (build v1) |
+| VUX-008 | VR01 | S3-CANDIDATE — «добавлено в Care» vs CTA «Сформировать план» | no | **DEFERRED TO PET-16** |
+| VUX-009 | VR01 | S3-CANDIDATE — «объясню словами врача» | no | **DEFERRED TO PET-16** |
+| VUX-010 | VB02 | S3-CANDIDATE — нет состояния CONTEXT AVAILABLE | yes (минорное) | **RESOLVED BEFORE P-02** (build v1) |
+| VUX-011 | VAI02 | S3-CANDIDATE — счётчик «шаг N из 6» и восприятие анкеты | no (к user tests) | **DEFERRED TO PET-16** (validation question V2) |
+| VUX-012 | VAI03 | S3-CANDIDATE — domain-термин «Care Decision» в UI-теге | no | **DEFERRED TO UX FREEZE REVIEW** |
+| VUX-013 | VAI03 | S3-CANDIDATE — required capability не представлена на экране Care Decision | no | **DEFERRED TO UX FREEZE REVIEW** |
 
 ### Grooming rule consistency
 
@@ -327,3 +335,12 @@ Findings:
 ## Next action
 
 Owner/UX review of veterinary audit findings before P-02. Приоритет review: VUX-001 (S0-CANDIDATE, safety copy, стоп-фактор V3), затем VUX-005 и VUX-007 (S1-CANDIDATE, provenance/trust). Решение об изменениях prototype — только через triage по правилам `ux-validation-gate.md`.
+
+## Final freeze review (2026-09-03)
+
+Проведён узкий final review перед freeze. Разбор VUX-002: **NON-BLOCKING FOR P-02** (см. запись finding — conversational awkwardness, не safety/urgency/escalation проблема; red flag не может быть пропущен, т.к. шаг 4 задаётся всем; новые medical thresholds не вводились). Prototype по VUX-002 **не изменён** (нет исправлений «для красоты»).
+
+Остальные открытые findings (VUX-008, VUX-009, VUX-011, VUX-012, VUX-013): ни одно не искажает safety/trust/comprehension invariant — все DEFERRED (см. таблицу).
+
+**VETERINARY_VALIDATION_BUILD_V1 — STATUS: FROZEN FOR VALIDATION (target: P-02, Owner Validation Wave 1).**
+Build record: `../../prototypes/veterinary-validation-build-v1/BUILD.md`. Freeze ≠ production/medical/UX/domain approved.
