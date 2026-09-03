@@ -1,0 +1,47 @@
+# Domain-neutral repository quality checks.
+# Scope: existing artifacts only (Markdown docs, self-contained HTML prototypes,
+# public-repo secret hygiene). No framework CI — production stack is not chosen
+# (Q-03, ARCHITECTURE GATE). Keep this workflow domain-neutral.
+name: repository-quality
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  repository-quality:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Forbidden secret-like filenames in tracked files
+        run: |
+          if git ls-files | grep -i -E '(^|/)\.env(\.|$)|\.pem$|\.key$|\.p12$|service-account.*\.json$|firebase-adminsdk.*\.json$|adminsdk.*\.json$|credentials.*\.json$|(^|/)secrets/' ; then
+            echo "::error::Secret-like filename tracked in a PUBLIC repository. Stop, do not merge."
+            exit 1
+          fi
+          echo "No secret-like filenames tracked."
+
+      - name: Secret content patterns in tracked files
+        run: |
+          if git grep -n -I -E 'ghp_[A-Za-z0-9]{30,}|github_pat_[A-Za-z0-9_]{30,}|sk-[A-Za-z0-9]{20,}|xox[baprs]-[A-Za-z0-9-]{10,}|-----BEGIN (RSA |EC |OPENSSH |DSA |PGP )?PRIVATE KEY( BLOCK)?-----|AIza[0-9A-Za-z_-]{35}|AKIA[0-9A-Z]{16}' -- . ':(exclude).github/**' ':(exclude)scripts/**' ; then
+            echo "::error::Secret-like content found in a PUBLIC repository. Stop, do not merge. Rotate if real."
+            exit 1
+          fi
+          echo "No secret content patterns found."
+
+      - name: Set up Node.js (for check scripts only)
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Markdown sanity and local links
+        run: node scripts/check-docs.mjs
+
+      - name: Prototype integrity (read-only, frozen builds)
+        run: node scripts/check-prototypes.mjs
