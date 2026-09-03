@@ -1,6 +1,8 @@
 # PROJECT STATE — Pet AI
 
-> Bridge между Git и Linear. Не дублирует backlog — канон операционных статусов: Linear (Team `Pet AI`/`PET`, Project `Pet AI — MVP`). Канон продуктовых решений и артефактов: этот репозиторий. Последнее обновление: 2026-08-30 (Linear синхронизация).
+> Bridge между Git и Linear. Не дублирует backlog — канон операционных статусов: Linear (Team `Pet AI`/`PET`, Project `Pet AI — MVP`). Канон продуктовых решений и артефактов: этот репозиторий. Последнее обновление: 2026-09-03 (GitHub bootstrap).
+>
+> Канонический remote: `origin` = https://github.com/AndreyDeveloper84/ai-pet.git (public). Agent Git Contract — `AGENTS.md` раздел 11. Worktrees агентов: `D:/Projects/pet-ai-wt/*` (ветки `agent/*`, base = main).
 
 ## Current phase
 

@@ -154,3 +154,12 @@
 - **Status:** DECIDED
 - **Impact:** Screen inventory, Linear UX-задачи, будущие verticals.
 - **Related:** `../02-ux/screen-inventory.md`, `../02-ux/ux-shell-matrix.md`
+
+## D-18
+
+- **Date:** 2026-09-03
+- **Decision:** GitHub-репозиторий https://github.com/AndreyDeveloper84/ai-pet (public) назначен каноническим remote-хранилищем Pet AI. Локальная история (9 commits, от Product Foundation до Linear sync) push-нута без переписывания. Введён Agent Git Contract: параллельные агенты работают в изолированных worktrees на ветках `agent/*`, не merge-ят в main самостоятельно; интеграция — только после review (cherry-pick approved commits или reviewed PR).
+- **Reason:** Bootstrap-задача владельца: сделать GitHub каноническим remote без потери локальной истории; подготовить инфраструктуру для параллельных агентов.
+- **Status:** DECIDED
+- **Impact:** Все агенты и разработчики работают через `origin`; control-plane files READ ONLY при параллельной работе; security check перед первым push пройден (secrets не обнаружены, добавлен `.gitignore`).
+- **Related:** `../../AGENTS.md` (раздел 11)
