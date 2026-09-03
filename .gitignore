@@ -1,0 +1,28 @@
+# Secrets / credentials
+.env
+.env.*
+*.pem
+*.key
+service-account*.json
+*firebase-adminsdk*.json
+*adminsdk*.json
+credentials*.json
+secrets/
+
+# Python
+__pycache__/
+.pytest_cache/
+
+# Node / frontend
+node_modules/
+dist/
+build/
+
+# IDE / local temporary files
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
