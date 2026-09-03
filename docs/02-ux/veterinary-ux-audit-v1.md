@@ -1,6 +1,7 @@
 # Veterinary UX Audit v1
 
 **Status: AUDIT / NON-BINDING.**
+**Correction pass (owner/UX triage, 2026-09-03):** по findings VUX-001/003/004/005/006/007/010 выполнен ограниченный correction pass → `../../prototypes/veterinary-validation-build-v1/` (VETERINARY_VALIDATION_BUILD_V1). Статусы отмечены в записях findings; первоначальные finding/evidence сохранены без изменений.
 Это НЕ новый UX spec и НЕ redesign doc. Это pre-validation consistency audit перед P-02 (Onboarding + Veterinary, PET-13).
 Findings `VUX-*` — аудиторские наблюдения агента, НЕ user research evidence (не путать с `F-*` в `research/findings/ux-findings-register.md`).
 Severity — **pre-validation audit judgment, not user evidence** (шкала S0–S4 заимствована из findings register, суффикс `-CANDIDATE`).
@@ -93,14 +94,17 @@ Findings:
   Severity: S0-CANDIDATE. Why: единственное место в flow, где лексика AI может быть понята как медицинское заключение до визита; V3 — стоп-фактор.
   Candidate direction (не redesign): «Почему» формулируется через симптомы и историю без нозологии («такие симптомы без осмотра не решают» / «при таких признаках состояние может ухудшаться»).
   Requires owner/UX decision: **yes** (safety copy).
+  **Статус: RESOLVED IN VALIDATION BUILD V1** — «Почему» во всех urgency states переписан без нозологии (только слова владельца, ответы intake, история); проверено smoke-test (нет «воспален*» в cdWhy).
 - **VUX-003** — Evidence: red-flag блок «Обратитесь срочно, если появится…» скрывается именно в состоянии TODAY (`rfBox.style.display = 'none'` при TODAY).
   Violated invariant: D-14 #6 (uncertainty/escalation info должна быть явной); логика safety copy: инструкция эскалации наиболее релевантна при повышенной срочности.
   Severity: S2-CANDIDATE. Why: пользователь с более серьёзной картиной не получает критерии немедленного обращения.
   Requires owner/UX decision: yes (safety copy; возможно, осознанное решение — тогда зафиксировать).
+  **Статус: RESOLVED IN VALIDATION BUILD V1** — red-flag блок виден при всех urgency states; TODAY дополнительно называет ответ(ы) владельца, повлиявшие на срочность («На срочность повлиял ваш ответ: …»), без новых medical thresholds.
 - **VUX-004** — Evidence: в OBSERVATION рекомендованное действие — «Понаблюдать 1–2 дня», но большая primary-кнопка ведёт в marketplace («Всё равно подобрать врача»), а рекомендованный путь — маленькая link-кнопка «Пока понаблюдаю».
   Violated invariant: правило 8 (CTA semantics = фактическое состояние/рекомендация); визуальная иерархия противоречит собственному Care Decision.
   Severity: S2-CANDIDATE. Why: в состоянии, где AI рекомендует НЕ идти к врачу, интерфейс визуально толкает в transactional flow.
   Requires owner/UX decision: yes.
+  **Статус: RESOLVED IN VALIDATION BUILD V1** — OBSERVATION: primary «Сохранить наблюдение» (рекомендованное действие), secondary «Всё равно подобрать ветеринара» (agency владельца сохранена).
 - **VUX-013** — Evidence: структура Care Decision (D-16) включает `required capability`, но на VAI03 она не представлена; компетенция впервые появляется на VM01.
   Violated invariant: D-16 (полнота UX representation Care Decision — без проектирования DB).
   Severity: S3-CANDIDATE / UNCLEAR. Why: пользователь не видит, какая компетенция нужна, до matching; возможно, это осознанное упрощение low-fi.
@@ -137,6 +141,7 @@ Findings:
   Severity: S1-CANDIDATE. Why: «проверен» от платформы — сильное trust-утверждение; если оно не подкреплено реальным процессом, это именно тот паттерн, который grooming rules запретили.
   Candidate direction: либо provenance-чипы на claims (provider-entered / clinic-provided / platform-verified / review-derived), либо нейтральная copy («диплом указан», «стаж по данным клиники»).
   Requires owner/UX decision: **yes** (модель верификации — продуктовое решение).
+  **Статус: RESOLVED IN VALIDATION BUILD V1** — claims «диплом проверен»/«лицензия проверена» удалены; специализация и опыт показаны как «профиль клиники/врача», рейтинг — «отзывы владельцев», с явной пометкой «Pet AI не проверяет эти данные». Новая verification model НЕ создавалась.
 
 Проверено и соответствует:
 
@@ -172,6 +177,7 @@ Findings:
   Severity: S2-CANDIDATE. Why: trust screen перестаёт быть trust screen, если врач может получить пустой контекст без сигнала обеим сторонам.
   Candidate direction: ядро (complaint + intake) несъёмное или снимается с явным warning; вторичное (история, фото) — опционально. Это veterinary-specific exception к grooming rule — требует решения.
   Requires owner/UX decision: **yes**.
+  **Статус: RESOLVED IN VALIDATION BUILD V1 (validation hypothesis для P-02)** — VB01 разделён на «Сводка для визита — передаётся всегда» (profile, complaint + длительность, intake answers, майский эпизод с источником; без toggles) и «Дополнительно — по вашему выбору» (фото). Production consent architecture не создавалась.
 
 Проверено и соответствует:
 
@@ -192,6 +198,7 @@ Findings:
   Severity: S3-CANDIDATE / UNCLEAR.
   Candidate direction: явный статус «Сводка передана клинике» после confirm; «прочитано врачом» — никогда без факта.
   Requires owner/UX decision: yes (минорное).
+  **Статус: RESOLVED IN VALIDATION BUILD V1** — VB02 показывает «Сводка для врача: передана клинике» с пометкой «„Прочитано врачом“ не показываем — мы этого не знаем. Передана ≠ прочитана.» Только consistency/copy correction; новая product capability не создавалась.
 
 Проверено и соответствует:
 
@@ -233,6 +240,7 @@ Findings:
   Severity: S1-CANDIDATE. Why: на V6 (различение врач/AI/Care — стоп-фактор) пользователь может приписать AI-совет врачу; это ровно тот механизм смешения, который экран обязан предотвращать.
   Candidate direction: источник на каждом action; AI-советы общей гигиены — отдельным стилем «совет Pet AI, не назначение врача» (или убрать из MVP).
   Requires owner/UX decision: **yes**.
+  **Статус: RESOLVED IN VALIDATION BUILD V1** — инструкция «Не давать Боне тереть ухо лапой» удалена (её нет в Doctor Result fixture); карточка «Сегодня» содержит только «Вечерняя доза капель» с чипом «Из назначения Dr. Ивановой (врач)».
 
 Проверено и соответствует:
 
