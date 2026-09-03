@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pet AI</title>
+<!--
+  GROOMING_VALIDATION_BUILD_V1 — self-contained clickable validation build.
+  Owner Validation Wave 1 (PET-13): participants P-01, P-03 (identical build).
+  Base: main @ 281d429 · Branch: agent/validation-ops · Fixture: research/fixtures/grooming-validation-v1.md (v1.0)
+  Flow: Onboarding O01→O02→O03→O04→Save→Home → G01 → G02 → G03 → G04 → G05 → TEST_ONLY_TEMPORAL_TRANSITION → G06
+  НЕ production code. Нет live AI, backend, внешних API, случайности. Все переходы детерминированы.
+  Internal screen IDs (g01..g06) используются только в коде — участнику не показываются.
+-->
+<style>
+  :root { --ink:#222; --gray:#777; --line:#bbb; --bg:#f2f2f2; }
+  * { box-sizing:border-box; margin:0; padding:0; font-family:-apple-system,"Segoe UI",Roboto,sans-serif; }
+  body { background:#ddd; display:flex; justify-content:center; padding:24px; }
+  .phone { width:375px; min-height:720px; background:var(--bg); border:2px solid var(--ink); border-radius:24px; overflow:hidden; position:relative; }
+  .screen { display:none; padding:24px 20px 40px; min-height:720px; }
+  .screen.active { display:block; }
+  h1 { font-size:21px; margin-bottom:10px; }
+  p.sub { color:var(--gray); font-size:13px; line-height:1.5; margin-bottom:18px; }
+  .btn { display:block; width:100%; padding:14px; margin-top:12px; border:2px solid var(--ink); background:var(--ink); color:#fff; font-size:15px; border-radius:10px; cursor:pointer; text-align:center; }
+  .btn.ghost { background:transparent; color:var(--ink); }
+  .btn.link { border:none; background:none; color:var(--gray); text-decoration:underline; font-size:13px; }
+  .card { background:#fff; border:1.5px solid var(--line); border-radius:12px; padding:14px; margin-bottom:12px; }
+  .card h3 { font-size:15px; margin-bottom:6px; }
+  .card p { font-size:13px; line-height:1.45; }
+  .card.clickable { cursor:pointer; }
+  .card.clickable:hover { border-color:var(--ink); }
+  .src { display:inline-block; font-size:11px; color:var(--gray); border:1px solid var(--line); border-radius:6px; padding:2px 6px; margin-top:8px; margin-right:4px; }
+  .src.unc { color:#8a5a00; border-style:dashed; }
+  .src.prov { color:#1a5a1a; }
+  .src.ai { color:#333; border-style:dashed; }
+  .why { font-size:13px; background:#fafafa; border-left:4px solid var(--ink); padding:8px 10px; border-radius:0 8px 8px 0; margin:8px 0; }
+  .trade { font-size:12px; color:#8a5a00; margin-top:6px; }
+  .aibubble { background:#fff; border:1.5px solid var(--ink); border-radius:14px 14px 14px 4px; padding:14px; margin-bottom:12px; font-size:14px; line-height:1.5; }
+  .photo { width:64px; height:64px; border-radius:50%; border:2px dashed var(--line); display:flex; align-items:center; justify-content:center; color:var(--gray); font-size:10px; text-align:center; flex:0 0 auto; }
+  .home-head { display:flex; gap:12px; align-items:center; margin-bottom:16px; }
+  .state { border:1.5px solid var(--line); border-left:6px solid var(--ink); border-radius:10px; background:#fff; padding:14px; margin-bottom:12px; }
+  .state h3 { font-size:15px; margin-bottom:4px; }
+  .state p { font-size:13px; color:var(--gray); }
+  .askbar { display:flex; gap:8px; margin-top:16px; }
+  .askbar input { flex:1; padding:12px; border:1.5px solid var(--line); border-radius:10px; font-size:14px; }
+  .askbar button { padding:12px 16px; border:2px solid var(--ink); background:var(--ink); color:#fff; border-radius:10px; cursor:pointer; }
+  .field { margin-bottom:14px; }
+  .field label { display:block; font-size:12px; color:var(--gray); margin-bottom:4px; }
+  .field input { width:100%; padding:12px; border:1.5px solid var(--line); border-radius:8px; font-size:15px; background:#fff; }
+  .chips { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:18px; }
+  .chip { padding:8px 12px; border:1.5px solid var(--line); border-radius:999px; font-size:13px; background:#fff; }
+  .chip.on { border-color:var(--ink); background:var(--ink); color:#fff; }
+  .slot { display:inline-block; padding:10px 14px; border:1.5px solid var(--line); border-radius:10px; background:#fff; font-size:13px; margin:0 8px 8px 0; cursor:pointer; }
+  .slot.busy { color:var(--gray); border-style:dashed; text-decoration:line-through; }
+  .alt { font-size:12px; background:#fff8ea; border:1px dashed #8a5a00; border-radius:8px; padding:10px; margin-bottom:10px; display:none; }
+  .alt.open { display:block; }
+  .kv { display:flex; justify-content:space-between; font-size:13px; padding:6px 0; border-bottom:1px dashed var(--line); }
+  .kv:last-child { border-bottom:none; }
+  .share { display:flex; align-items:flex-start; gap:8px; font-size:13px; padding:6px 0; }
+  .share input { margin-top:2px; }
+  .nope { font-size:12px; color:var(--gray); padding:4px 0 0 22px; }
+  .badge { display:inline-block; font-size:11px; font-weight:700; border:2px solid #1a5a1a; color:#1a5a1a; border-radius:6px; padding:2px 8px; margin-bottom:10px; }
+  .mic { display:inline-flex; align-items:center; gap:8px; border:1.5px solid var(--line); border-radius:999px; padding:10px 16px; background:#fff; font-size:13px; cursor:pointer; margin-bottom:4px; }
+  textarea { width:100%; min-height:70px; padding:10px; border:1.5px solid var(--line); border-radius:8px; font-size:13px; }
+  ul.res { list-style:none; font-size:13px; line-height:1.45; }
+  ul.res li { padding:4px 0 4px 18px; position:relative; }
+  ul.res li::before { content:"—"; position:absolute; left:0; color:var(--gray); }
+  .done { font-size:13px; background:#f0f7f0; border:1.5px solid #1a5a1a; border-radius:10px; padding:12px; margin-top:12px; display:none; }
+  .done.open { display:block; }
+  .transition { text-align:center; padding-top:140px; }
+  .transition p { font-size:17px; line-height:1.6; margin-bottom:8px; }
+</style>
+</head>
+<body>
+<div class="phone">
+
+  <!-- Onboarding: O01 -->
+  <section class="screen active" id="o01">
+    <h1>Pet AI знает вашего питомца</h1>
+    <p class="sub">Ассистент, который помнит историю питомца, помогает понять, что делать дальше, и подбирает проверенных специалистов — грумеров и врачей.</p>
+    <div class="card"><h3>Помнит</h3><p>История, особенности и важные факты о питомце — всегда под рукой.</p></div>
+    <div class="card"><h3>Подсказывает</h3><p>Что сделать дальше: от «пора к грумеру» до «стоит показать врачу».</p></div>
+    <div class="card"><h3>Организует</h3><p>Подберёт специалиста и поможет записаться. Результат вернётся в историю питомца.</p></div>
+    <button class="btn" onclick="go('o02')">Начать</button>
+  </section>
+
+  <!-- Onboarding: O02 -->
+  <section class="screen" id="o02">
+    <h1>Кто ваш питомец?</h1>
+    <p class="sub">Пара базовых фактов — остальное можно рассказать своими словами на следующем шаге.</p>
+    <div class="field"><label>Имя</label><input id="petName" type="text" placeholder="Например, Боня" value="Боня"></div>
+    <div class="field"><label>Вид</label>
+      <div class="chips">
+        <span class="chip on">Собака</span>
+        <span class="chip">Кошка (позже)</span>
+        <span class="chip">Другое (позже)</span>
+      </div>
+    </div>
+    <div class="field"><label>Порода (необязательно)</label><input type="text" placeholder="Например, корги" value="корги"></div>
+    <div class="field"><label>Возраст или дата рождения (необязательно)</label><input type="text" placeholder="Например, 2 года" value="2 года"></div>
+    <button class="btn" onclick="go('o03')">Продолжить</button>
+    <button class="btn link" onclick="go('o03')">Заполнить позже</button>
+  </section>
+
+  <!-- Onboarding: O03 -->
+  <section class="screen" id="o03">
+    <h1>Расскажите о <span class="nm">Боне</span></h1>
+    <p class="sub">Своими словами — как рассказали бы другу. Привычки, здоровье, что любит и чего боится. Это поможет Pet AI учитывать контекст, а не переспрашивать.</p>
+    <div class="field">
+      <textarea style="min-height:110px;">Боне 2 года, корги, 12 кг. Боится сильной сушки в груминг-салоне. Кажется, была реакция на курицу.</textarea>
+    </div>
+    <button class="mic" type="button">🎙 Рассказать голосом</button>
+    <button class="btn" onclick="go('o04')">Продолжить</button>
+    <button class="btn link" onclick="go('o04')">Пропустить</button>
+  </section>
+
+  <!-- Onboarding: O04 -->
+  <section class="screen" id="o04">
+    <h1>Вот что я понял о <span class="nm">Боне</span></h1>
+    <p class="sub">Проверьте перед сохранением. То, в чём мы не уверены, отмечено отдельно — это не станет фактом без подтверждения.</p>
+    <div class="card">
+      <h3>Профиль</h3>
+      <p>Собака · корги · 2 года · 12 кг</p>
+      <span class="src">Источник: вы · сейчас</span>
+    </div>
+    <div class="card">
+      <h3>Важно учитывать</h3>
+      <p>Боится сильной сушки</p>
+      <span class="src">Источник: вы</span><span class="src">Актуально</span>
+    </div>
+    <div class="card">
+      <h3>Требует уточнения</h3>
+      <p>Возможная реакция на курицу</p>
+      <span class="src unc">Источник: вы</span><span class="src unc">Не подтверждено</span>
+    </div>
+    <button class="btn" id="saveBtn" onclick="go('h01')">Сохранить Боню</button>
+    <button class="btn ghost" onclick="go('o03')">Дополнить рассказ</button>
+  </section>
+
+  <!-- Home (конец onboarding) -->
+  <section class="screen" id="h01">
+    <div class="home-head">
+      <div class="photo">фото<br>Бони</div>
+      <div><h1 style="margin-bottom:2px;">Боня</h1><p class="sub" style="margin:0;">Собака · корги · 2 года · 12 кг</p></div>
+    </div>
+    <div class="state"><h3>На сегодня нет активных задач</h3><p>Если что-то нужно — просто скажите Pet AI.</p></div>
+    <div class="card"><h3>Важно учитывать</h3><p>Боится сильной сушки · <span style="color:var(--gray)">источник: вы</span></p></div>
+    <div class="askbar">
+      <input id="need" value="Боню пора привести в порядок" readonly>
+      <button onclick="go('g01')">➤</button>
+    </div>
+  </section>
+
+  <!-- G01: Need/context entry -->
+  <section class="screen" id="g01">
+    <div class="aibubble">
+      Понял: Боню пора к грумеру.<br><br>
+      Учитываю контекст Бони: <b>корги, 12 кг</b>, и что она <b>боится сильной сушки</b> — подберу специалиста с бережной сушкой. Переспрашивать это не буду.
+    </div>
+    <button class="btn" onclick="go('g02')">Подобрать специалиста</button>
+    <button class="btn link" onclick="go('h01')">Не сейчас</button>
+  </section>
+
+  <!-- G02: Curated shortlist -->
+  <section class="screen" id="g02">
+    <h1>Три варианта под Боню</h1>
+    <p class="sub">Подобраны под контекст: груминг корги, 12 кг, бережная сушка.</p>
+
+    <div class="card clickable" onclick="pickProvider('anna'); go('g03')">
+      <h3>Анна Петрова · грумер</h3>
+      <div class="why">Почему подходит: работает с корги и использует мягкую сушку без компрессора — прямо закрывает особенность Бони.</div>
+      <div class="kv"><span>Комплексный груминг</span><b>2 500 ₽ · 90 мин</b></div>
+      <div class="kv"><span>Расстояние</span><b>1,2 км</b></div>
+      <div class="kv"><span>Ближайшее время</span><b>завтра 15:00</b></div>
+      <p class="trade">Trade-off: Боня у неё ещё не была — первый визит может занять больше времени.</p>
+    </div>
+
+    <div class="card clickable" onclick="pickProvider('olga'); go('g03')">
+      <h3>Ольга · грумер, тревожные собаки</h3>
+      <div class="why">Почему подходит: специализация — тревожные собаки, бережная сушка без компрессора.</div>
+      <div class="kv"><span>Комплексный груминг</span><b>2 800 ₽</b></div>
+      <div class="kv"><span>Расстояние</span><b>3,5 км</b></div>
+      <div class="kv"><span>Ближайшее время</span><b>сегодня 18:00</b></div>
+      <p class="trade">Trade-off: далеко; Боню не знает — первый визит может занять больше времени.</p>
+    </div>
+
+    <div class="card clickable" onclick="pickProvider('maria'); go('g03')">
+      <h3>Мария · грумер, выезд на дом</h3>
+      <div class="why">Почему подходит: принимает на дому — Боне не придётся никуда ехать, меньше стресса до и после процедуры. Опыт с корги.</div>
+      <div class="kv"><span>Комплексный груминг</span><b>3 000 ₽</b></div>
+      <div class="kv"><span>Формат</span><b>выезд к вам</b></div>
+      <div class="kv"><span>Ближайшее время</span><b>послезавтра 12:00</b></div>
+      <p class="trade">Trade-off: дороже и ждать дольше — окон сегодня и завтра нет.</p>
+    </div>
+  </section>
+
+  <!-- G03: Provider profile -->
+  <section class="screen" id="g03">
+    <div class="home-head">
+      <div class="photo">фото</div>
+      <div><h1 style="margin-bottom:2px;" id="pvName">Анна Петрова</h1><p class="sub" style="margin:0;" id="pvKind">грумер</p></div>
+    </div>
+    <h3 style="font-size:15px;margin-bottom:8px;">Почему <span id="pvName2">Анна</span> подходит Боне?</h3>
+    <div class="why" id="pvWhy">…</div>
+    <span class="src ai">Оценка Pet AI на основе данных специалиста и контекста Бони</span>
+    <div class="card" style="margin-top:12px;">
+      <div class="kv"><span>Комплексный груминг (корги)</span><b id="pvPrice">2 500 ₽ · 90 мин</b></div>
+      <div class="kv"><span>Расстояние</span><b id="pvDist">1,2 км</b></div>
+      <span class="src prov">Источник: <span id="pvSrc">Анна Петрова</span></span>
+    </div>
+    <div class="card">
+      <h3>Что учесть</h3>
+      <p id="pvNote">Боня боится сильной сушки — при записи вы сможете передать это специалисту. Первый визит у нового специалиста может занять больше времени.</p>
+    </div>
+    <h3 style="font-size:14px;margin:8px 0;">Выберите время</h3>
+    <div>
+      <span class="slot" onclick="pickSlot('завтра 15:00')">завтра 15:00</span>
+      <span class="slot busy" onclick="busySlot()">завтра 17:00</span>
+      <span class="slot" onclick="pickSlot('суббота 11:00')">сб 11:00</span>
+    </div>
+    <div class="alt" id="altBox">
+      Слот «завтра 17:00» занят. Ближайшие варианты: <b>завтра 15:00</b> или <b>сб 11:00</b> у этого специалиста.
+    </div>
+  </section>
+
+  <!-- G04: Booking review + minimum relevant context -->
+  <section class="screen" id="g04">
+    <h1>Проверьте запись</h1>
+    <div class="card">
+      <div class="kv"><span>Специалист</span><b id="bkProv">Анна Петрова</b></div>
+      <div class="kv"><span>Услуга</span><b>Комплексный груминг</b></div>
+      <div class="kv"><span>Время</span><b id="bkSlot">завтра 15:00 · 90 минут</b></div>
+      <div class="kv"><span>Цена</span><b id="bkPrice">2 500 ₽</b></div>
+      <div class="kv"><span>Адрес</span><b id="bkDist">1,2 км от вас</b></div>
+    </div>
+    <div class="card">
+      <h3>Что получит специалист</h3>
+      <div class="share"><input type="checkbox" checked id="sh1"><label for="sh1">Имя, вид, порода: Боня, собака, корги</label></div>
+      <div class="share"><input type="checkbox" checked id="sh2"><label for="sh2">Вес: 12 кг</label></div>
+      <div class="share"><input type="checkbox" checked id="sh3"><label for="sh3">Особенность: боится сильной сушки</label></div>
+      <p class="nope">Не передаётся: медицинская история, «возможная реакция на курицу» (не подтверждено), история других визитов.</p>
+    </div>
+    <p class="sub" style="margin-top:4px;">Pet AI знает о Боне больше, но передаёт специалисту только минимум, необходимый для услуги, — с вашего разрешения.</p>
+    <button class="btn" onclick="confirmBooking()">Подтвердить запись</button>
+    <button class="btn link" onclick="go('g03')">Изменить время</button>
+  </section>
+
+  <!-- G05: Booking confirmed -->
+  <section class="screen" id="g05">
+    <span class="badge">ЗАПИСЬ ПОДТВЕРЖДЕНА</span>
+    <h1>Запись подтверждена</h1>
+    <div class="card">
+      <div class="kv"><span>Специалист</span><b id="cfProv">Анна Петрова</b></div>
+      <div class="kv"><span>Время</span><b id="cfSlot">завтра 15:00 · 90 минут</b></div>
+      <div class="kv"><span>Адрес</span><b id="cfDist">1,2 км от вас</b></div>
+    </div>
+    <div class="card"><h3>Что дальше</h3><p>Согласованная вами информация доступна <span id="cfProv2">Анне Петровой</span>. После визита результат специалиста вернётся в историю Бони.</p></div>
+    <button class="btn" onclick="go('t01')">Далее</button>
+    <button class="btn link" onclick="go('h01')">На главный экран</button>
+  </section>
+
+  <!-- TEST_ONLY_TEMPORAL_TRANSITION: research fixture, НЕ production screen -->
+  <section class="screen" id="t01">
+    <div class="transition">
+      <p>Теперь представьте, что визит уже состоялся.</p>
+      <p>Боня вернулась с груминга, а Анна добавила результат визита.</p>
+      <button class="btn" onclick="go('g06')">Посмотреть результат визита</button>
+    </div>
+  </section>
+
+  <!-- G06: Provider Result -->
+  <section class="screen" id="g06">
+    <h1>Результат визита</h1>
+    <div class="card">
+      <h3>Результат от специалиста</h3>
+      <ul class="res">
+        <li>Процедура прошла спокойно.</li>
+        <li>Выполнено мытьё и вычёсывание.</li>
+        <li>Использована мягкая сушка.</li>
+        <li>Когти подстрижены.</li>
+      </ul>
+      <span class="src prov">Источник: Анна Петрова · грумер</span>
+    </div>
+    <div class="card">
+      <h3>Рекомендация специалиста</h3>
+      <p>Повторный груминг через 4–6 недель.</p>
+      <span class="src prov">Источник: Анна Петрова · грумер</span>
+      <p style="margin-top:8px; color:var(--gray); font-size:12px;">Это рекомендация Анны. Она сохранится в истории Бони и не станет планом без вашего решения.</p>
+    </div>
+    <button class="btn" onclick="plan(true)">Запланировать</button>
+    <button class="btn ghost" onclick="plan(false)">Не сейчас</button>
+    <div class="done" id="planYes">Хорошо. Когда подойдёт срок (через 4–6 недель), Pet AI предложит повторить запись у Анны Петровой.</div>
+    <div class="done" id="planNo">Хорошо. Рекомендация Анны сохранится в истории Бони.</div>
+    <div class="card" style="margin-top:16px;">
+      <h3>Ваша заметка о визите</h3>
+      <p style="color:var(--gray); font-size:12px; margin-bottom:8px;">Ваше наблюдение хранится отдельно от результата специалиста.</p>
+      <textarea id="ownNote" placeholder="Например: Боня вернулась спокойной"></textarea>
+      <button class="btn ghost" onclick="saveNote()">Сохранить заметку</button>
+      <div class="done" id="noteSaved">Заметка сохранена отдельно: это ваше наблюдение, а не результат специалиста.</div>
+    </div>
+  </section>
+
+</div>
+
+<script>
+  // Deterministic prototype state machine: AVAILABLE → BOOKING REVIEW → CONFIRMED → COMPLETED
+  const state = { provider: 'anna', slot: 'завтра 15:00', booking: 'AVAILABLE' };
+  const providers = {
+    anna:  { name:'Анна Петрова', short:'Анна', kind:'грумер', price:'2 500 ₽ · 90 мин', dist:'1,2 км', loc:'1,2 км от вас',
+             why:'Работает с корги и использует мягкую сушку без компрессора — прямо закрывает особенность Бони.',
+             note:'Боня боится сильной сушки — при записи вы сможете передать это Анне. Первый визит у нового специалиста может занять больше времени.' },
+    olga:  { name:'Ольга', short:'Ольга', kind:'грумер · тревожные собаки', price:'2 800 ₽', dist:'3,5 км', loc:'3,5 км от вас',
+             why:'Специализация — тревожные собаки и бережная сушка без компрессора: прямо закрывает особенность Бони.',
+             note:'Боня боится сильной сушки — при записи вы сможете передать это Ольге. Учтите дорогу: 3,5 км.' },
+    maria: { name:'Мария', short:'Мария', kind:'грумер · выезд на дом', price:'3 000 ₽', dist:'у вас дома', loc:'у вас дома',
+             why:'Принимает на дому: Боне не придётся никуда ехать — меньше стресса до и после процедуры. Опыт с корги.',
+             note:'Выездной формат: груминг пройдёт у вас дома. Про особенность Бони (боится сильной сушки) вы сможете предупредить при записи.' }
+  };
+  function go(id) {
+    if (id === 'g05' && state.booking !== 'CONFIRMED') return; // no fake confirmation
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    window.scrollTo(0,0);
+  }
+  function pickProvider(key) {
+    state.provider = key;
+    const p = providers[key];
+    document.getElementById('pvName').textContent = p.name;
+    document.getElementById('pvName2').textContent = p.short;
+    document.getElementById('pvKind').textContent = p.kind;
+    document.getElementById('pvWhy').textContent = p.why;
+    document.getElementById('pvPrice').textContent = p.price;
+    document.getElementById('pvDist').textContent = p.dist;
+    document.getElementById('pvSrc').textContent = p.name;
+    document.getElementById('pvNote').textContent = p.note;
+  }
+  function pickSlot(slot) {
+    state.slot = slot; state.booking = 'BOOKING REVIEW';
+    const p = providers[state.provider];
+    document.getElementById('bkProv').textContent = p.name;
+    document.getElementById('bkSlot').textContent = slot + ' · 90 минут';
+    document.getElementById('bkPrice').textContent = p.price.replace(' · 90 мин','');
+    document.getElementById('bkDist').textContent = p.loc;
+    go('g04');
+  }
+  function busySlot() { document.getElementById('altBox').classList.toggle('open'); }
+  function confirmBooking() {
+    state.booking = 'CONFIRMED';
+    const p = providers[state.provider];
+    document.getElementById('cfProv').textContent = p.name;
+    document.getElementById('cfProv2').textContent = p.name === 'Анна Петрова' ? 'Анне Петровой' : p.name;
+    document.getElementById('cfSlot').textContent = state.slot + ' · 90 минут';
+    document.getElementById('cfDist').textContent = p.loc;
+    go('g05');
+  }
+  function plan(will) {
+    document.getElementById('planYes').classList.toggle('open', will);
+    document.getElementById('planNo').classList.toggle('open', !will);
+  }
+  function saveNote() { document.getElementById('noteSaved').classList.add('open'); }
+</script>
+</body>
+</html>
