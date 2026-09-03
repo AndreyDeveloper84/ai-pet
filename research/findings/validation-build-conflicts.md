@@ -1,18 +1,18 @@
-# Validation Build Conflicts — OPEN
+# Validation Build Conflicts — RESOLVED (owner decisions 2026-09-03)
 
-**Status: OPEN.** Реестр расхождений между frozen-спецификацией GROOMING_VALIDATION_BUILD_V1 (задание владельца, PET-13) и ранними артефактами репозитория. Конфликты НЕ решены самовольно; UX не менялся до решения владельца. Build V1 построен по frozen-спецификации владельца; расхождения зафиксированы здесь.
+**Status: ALL RESOLVED.** Решения владельца по конфликтам C-01…C-08 получены и применены. Build V1 соответствует решениям; следствия отражены в `../fixtures/grooming-validation-v1.md` (v1.1), `../owner-interviews/p01-grooming-test-script-v2.md` и build.
 
-Формат: Screen / Artifact A / Artifact B / Conflict / Impact / Owner decision required.
+Формат: Screen / Artifact A / Artifact B / Conflict / Impact / Owner decision / Status.
 
 ## C-01
 
 - **Screen:** весь flow
 - **Artifact A:** frozen flow G01→G06 (задание владельца)
 - **Artifact B:** `docs/02-ux/screen-inventory.md` + `prototypes/grooming-loop-low-fi/` (H01, AI01, AI02, M01, M02, B01, B02, R01, R02, HIST01)
-- **Conflict:** разные системы ID и разный состав экранов. Frozen flow не содержит AI02 (previous relationship), R02 (feedback), HIST01 (timeline); B-артефакты не содержат G01–G06.
-- **Impact:** mapping сценариев теста (G1–G6 в `ux-test-script-grooming-v1.md` привязаны к старым ID) на новый build неоднозначен; нельзя молча считать их эквивалентными.
-- **Owner decision required:** канонический mapping G01–G06 ↔ старые ID и судьба экранов AI02/R02/HIST01 в Wave 1.
-- **Status:** OPEN
+- **Conflict:** разные системы ID и разный состав экранов; mapping сценариев G1–G6 старого скрипта на новый build неоднозначен.
+- **Impact:** нельзя молча считать старые и новые ID эквивалентными.
+- **Owner decision:** Для Owner Validation Wave 1 каноничен GROOMING_VALIDATION_BUILD_V1: Onboarding → G01 → G02 → G03 → G04 → G05 → TEST_ONLY_TEMPORAL_TRANSITION → G06. Старые AI02/R02/HIST01 mappings — legacy/superseded для этого validation scenario. Build не менять (по C-01).
+- **Status:** RESOLVED
 
 ## C-02
 
@@ -20,19 +20,19 @@
 - **Artifact A:** frozen fixture: Боня, корги, **2 года, 12 кг**
 - **Artifact B:** `prototypes/onboarding-low-fi/` («3 года»), `prototypes/grooming-loop-low-fi/` («~13 кг»)
 - **Conflict:** расходятся возраст и вес Бони.
-- **Impact:** continuity внутри build V1 выдержана по frozen fixture; старые прототипы содержат иные значения — нельзя смешивать builds в одной волне.
-- **Owner decision required:** подтвердить frozen-значения (2 года, 12 кг) каноническими для Wave 1.
-- **Status:** OPEN
+- **Impact:** builds несопоставимы при смешивании в одной волне.
+- **Owner decision:** Canonical P-01/P-03 fixture: Боня, корги, 2 года, 12 кг. Старые 3 года / ~13 кг не использовать в Wave 1.
+- **Status:** RESOLVED
 
 ## C-03
 
 - **Screen:** G02/G03/G04/G05 (provider facts, booking)
-- **Artifact A:** frozen fixture: **Анна Петрова, грумер**, Комплексный груминг **2 500 ₽ · 90 минут**
-- **Artifact B:** `prototypes/grooming-loop-low-fi/`: «Анна, персональный грумер», **3 500 ₽**
+- **Artifact A:** frozen fixture: **Анна Петрова, грумер, 2 500 ₽**
+- **Artifact B:** `prototypes/grooming-loop-low-fi/`: «Анна, персональный грумер, 3 500 ₽»
 - **Conflict:** имя, тип провайдера и цена расходятся.
-- **Impact:** результаты сессий по разным builds несопоставимы по ценовому сигналу.
-- **Owner decision required:** подтвердить provider facts build V1 каноническими.
-- **Status:** OPEN
+- **Impact:** ценовой сигнал несопоставим между builds.
+- **Owner decision:** Canonical provider/price fixture: Анна Петрова, грумер, 2 500 ₽. Старые Анна / 3 500 ₽ — superseded test data.
+- **Status:** RESOLVED
 
 ## C-04
 
@@ -40,50 +40,52 @@
 - **Artifact A:** frozen: «повторный груминг через **4–6 недель**»
 - **Artifact B:** `prototypes/grooming-loop-low-fi/`: «6–8 недель»
 - **Conflict:** интервал рекомендации расходится.
-- **Impact:** probing «кто написал рекомендацию» сопоставим, но значения разные — при сравнении со старыми заметками не смешивать.
-- **Owner decision required:** подтвердить 4–6 недель.
-- **Status:** OPEN
+- **Impact:** значения не смешивать при сравнении со старыми заметками.
+- **Owner decision:** Canonical provider recommendation: повторный комплексный груминг через 4–6 недель. Старые 6–8 недель — superseded.
+- **Status:** RESOLVED
 
 ## C-05
 
 - **Screen:** G01/G02 (previous relationship)
-- **Artifact A:** frozen fixture не содержит прошлого визита Бони к Анне; G01–G06 не содержат экрана previous relationship
-- **Artifact B:** `prototypes/grooming-loop-low-fi/` + `ux-test-script-grooming-v1.md`: «в прошлый раз Боня была у Анны 12 июня», AI02 «Повторить у Анны»; гипотеза H2 (relationship сокращает путь)
-- **Conflict:** build V1 не заявляет prior relationship («Боня у неё ещё не была»), старый сценарий тестировал H2 на противоположном fixture.
-- **Impact:** H2 (relationship first) в Wave 1 на build V1 не проверяется — нужно решение, осознанно ли это.
-- **Owner decision required:** подтвердить, что Wave 1 grooming идёт без prior-relationship ветки.
-- **Status:** OPEN
+- **Artifact A:** frozen fixture без прошлого визита Бони к Анне; G01–G06 без экрана previous relationship
+- **Artifact B:** старый prototype/script: «Боня была у Анны 12 июня», AI02, гипотеза H2
+- **Conflict:** build V1 не заявляет prior relationship; старый сценарий тестировал H2 на противоположном fixture.
+- **Impact:** H2 в Wave 1 на build V1 не проверяется.
+- **Owner decision:** Previous relationship НЕ входит в P-01/P-03 — намеренное product/validation решение. P-01 проверяет создание ПЕРВОГО relationship: Need → Matching → Anna → Booking → Completed Visit → Result → Feedback/History → relationship signal. Гипотеза «relationship before marketplace» — отдельный future/retest scenario после первого completed loop. Prior Anna relationship обратно в build НЕ добавлять.
+- **Status:** RESOLVED
 
 ## C-06
 
 - **Screen:** G02 (matching candidates)
-- **Artifact A:** frozen спецификация требует 3 объяснимых кандидата, но задаёт fixture только для Анны Петровой
-- **Artifact B:** кандидаты Ольга и Салон «Лапушка» перенесены в build V1 из прежнего TEST_CANDIDATE-прототипа без изменений
-- **Conflict:** frozen fixture для двух неканонических кандидатов не утверждён.
-- **Impact:** их price/distance/trade-off — carry-over, а не validated fixture; canonical booking path (Анна Петрова) это не затрагивает.
-- **Owner decision required:** утвердить или заменить fixture неканонических кандидатов.
-- **Status:** OPEN
+- **Artifact A:** frozen спецификация: 3 объяснимых кандидата; fixture задан только для Анны Петровой
+- **Artifact B:** кандидаты из прежнего TEST_CANDIDATE-прототипа (Ольга, Салон «Лапушка»)
+- **Conflict:** frozen fixture для неканонических кандидатов не был утверждён.
+- **Impact:** price/distance/trade-off неканонических кандидатов — fixture-only.
+- **Owner decision:** **Анна / Мария / Ольга** — допустимый frozen TEST FIXTURE G02. Это НЕ утверждение о production marketplace. Secondary business names/details — fixture-only, не превращать в product decisions.
+- **Применено:** в build G02 Салон «Лапушка» заменён на Марию (грумер, выезд на дом — 3 000 ₽, у вас дома); Ольга сохранена. Fixture manifest → v1.1.
+- **Status:** RESOLVED
 
 ## C-07
 
 - **Screen:** test surface
-- **Artifact A:** требование: участник не видит IDs/FROZEN/internal terms
-- **Artifact B:** `prototypes/*/index.html` показывают `.tag`-метки («H01 · Home», «TEST_CANDIDATE») и служебные notes
-- **Conflict:** старые прототипы нарушают test surface требование; build V1 метки скрывает.
-- **Impact:** при использовании старых прототипов в сессии участник видит внутренние метки.
-- **Owner decision required:** подтвердить, что Wave 1 grooming идёт только на build V1 (старый grooming prototype не используется для P-01/P-03).
-- **Status:** OPEN
+- **Artifact A:** участник не видит IDs/FROZEN/internal terms
+- **Artifact B:** старые `prototypes/*/index.html` показывают `.tag`-метки и служебные notes
+- **Conflict:** старые прототипы нарушают test surface требование.
+- **Impact:** риск показа внутренних меток респонденту.
+- **Owner decision:** Для Wave 1 использовать ТОЛЬКО GROOMING_VALIDATION_BUILD_V1. Старые prototypes/storyboards респондентам не показывать.
+- **Status:** RESOLVED
 
 ## C-08
 
 - **Screen:** research artifacts (методика)
 - **Artifact A:** frozen flow + build V1
-- **Artifact B:** `research/owner-interviews/ux-test-script-grooming-v1.md`, `session-runbook-v1.md` — сценарии G1–G6 и лист наблюдателя привязаны к старому flow (AI02, M01, B01, R01, R02, HIST01, цена 3 500 ₽, «6–8 недель»)
-- **Conflict:** методика ссылается на экраны и значения, которых нет в build V1. Методика НЕ переписана (запрещено заданием); создан компактный observation sheet `p01-grooming-observation-sheet.md` по новому flow.
-- **Impact:** модератору нужен актуальный скрипт под build V1 или явное решение использовать observation sheet как основной инструмент.
-- **Owner decision required:** обновить grooming test script под G01–G06 (после решения по C-01) или утвердить observation sheet.
-- **Status:** OPEN
+- **Artifact B:** `ux-test-script-grooming-v1.md`, `session-runbook-v1.md` — привязка к старому flow и значениям
+- **Conflict:** методика ссылалась на экраны/значения, отсутствующие в build V1.
+- **Impact:** модератору нужен актуальный script под build V1.
+- **Owner decision:** Разрешена адаптация moderator/test script под актуальный frozen build без смены research methodology и без изменений G01–G06: убрать obsolete screen IDs; убрать проверку previous relationship; привести задачи/вопросы к G01→G06; сохранить neutral/non-leading wording и raw evidence capture; добавить future hypothesis note («previous relationship tested after first completed care loop»). Старый v1 — исторический артефакт, не переписывать.
+- **Применено:** создан `../owner-interviews/p01-grooming-test-script-v2.md`; v1 не изменён.
+- **Status:** RESOLVED
 
 ## Примечание — untracked source artifacts (не конфликт)
 
-В canonical main упоминались untracked PNG storyboard files и папка `Onboarding Pets Owner/` в `prototypes/onboarding-low-fi/`. В этом worktree их нет; не реконструировались и не копировались (см. задание §14). Для build V1 они не требуются — blocker НЕ объявляется.
+В canonical main упоминались untracked PNG storyboard files и папка `Onboarding Pets Owner/` в `prototypes/onboarding-low-fi/`. В worktree отсутствуют; не реконструировались. По C-07 старые storyboards респондентам не показываются — для Wave 1 не требуются.

@@ -184,13 +184,13 @@
       <p class="trade">Trade-off: далеко; Боню не знает — первый визит может занять больше времени.</p>
     </div>
 
-    <div class="card clickable" onclick="pickProvider('salon'); go('g03')">
-      <h3>Салон «Лапушка»</h3>
-      <div class="why">Почему подходит: большой опыт с корги, есть окна сегодня, ближайший к вам.</div>
-      <div class="kv"><span>Комплексный груминг</span><b>2 500 ₽</b></div>
-      <div class="kv"><span>Расстояние</span><b>800 м</b></div>
-      <div class="kv"><span>Ближайшее время</span><b>сегодня 16:30</b></div>
-      <p class="trade">Trade-off: салон, а не персональный мастер; сушка стандартная — про особенность Бони нужно предупредить отдельно.</p>
+    <div class="card clickable" onclick="pickProvider('maria'); go('g03')">
+      <h3>Мария · грумер, выезд на дом</h3>
+      <div class="why">Почему подходит: принимает на дому — Боне не придётся никуда ехать, меньше стресса до и после процедуры. Опыт с корги.</div>
+      <div class="kv"><span>Комплексный груминг</span><b>3 000 ₽</b></div>
+      <div class="kv"><span>Формат</span><b>выезд к вам</b></div>
+      <div class="kv"><span>Ближайшее время</span><b>послезавтра 12:00</b></div>
+      <p class="trade">Trade-off: дороже и ждать дольше — окон сегодня и завтра нет.</p>
     </div>
   </section>
 
@@ -306,15 +306,15 @@
   // Deterministic prototype state machine: AVAILABLE → BOOKING REVIEW → CONFIRMED → COMPLETED
   const state = { provider: 'anna', slot: 'завтра 15:00', booking: 'AVAILABLE' };
   const providers = {
-    anna:  { name:'Анна Петрова', short:'Анна', kind:'грумер', price:'2 500 ₽ · 90 мин', dist:'1,2 км',
+    anna:  { name:'Анна Петрова', short:'Анна', kind:'грумер', price:'2 500 ₽ · 90 мин', dist:'1,2 км', loc:'1,2 км от вас',
              why:'Работает с корги и использует мягкую сушку без компрессора — прямо закрывает особенность Бони.',
              note:'Боня боится сильной сушки — при записи вы сможете передать это Анне. Первый визит у нового специалиста может занять больше времени.' },
-    olga:  { name:'Ольга', short:'Ольга', kind:'грумер · тревожные собаки', price:'2 800 ₽', dist:'3,5 км',
+    olga:  { name:'Ольга', short:'Ольга', kind:'грумер · тревожные собаки', price:'2 800 ₽', dist:'3,5 км', loc:'3,5 км от вас',
              why:'Специализация — тревожные собаки и бережная сушка без компрессора: прямо закрывает особенность Бони.',
              note:'Боня боится сильной сушки — при записи вы сможете передать это Ольге. Учтите дорогу: 3,5 км.' },
-    salon: { name:'Салон «Лапушка»', short:'«Лапушка»', kind:'груминг-салон', price:'2 500 ₽', dist:'800 м',
-             why:'Большой опыт именно с корги, ближайший к вам, есть окна сегодня.',
-             note:'Сушка в салоне стандартная — про особенность Бони нужно предупредить отдельно при записи.' }
+    maria: { name:'Мария', short:'Мария', kind:'грумер · выезд на дом', price:'3 000 ₽', dist:'у вас дома', loc:'у вас дома',
+             why:'Принимает на дому: Боне не придётся никуда ехать — меньше стресса до и после процедуры. Опыт с корги.',
+             note:'Выездной формат: груминг пройдёт у вас дома. Про особенность Бони (боится сильной сушки) вы сможете предупредить при записи.' }
   };
   function go(id) {
     if (id === 'g05' && state.booking !== 'CONFIRMED') return; // no fake confirmation
@@ -340,7 +340,7 @@
     document.getElementById('bkProv').textContent = p.name;
     document.getElementById('bkSlot').textContent = slot + ' · 90 минут';
     document.getElementById('bkPrice').textContent = p.price.replace(' · 90 мин','');
-    document.getElementById('bkDist').textContent = p.dist + ' от вас';
+    document.getElementById('bkDist').textContent = p.loc;
     go('g04');
   }
   function busySlot() { document.getElementById('altBox').classList.toggle('open'); }
@@ -350,7 +350,7 @@
     document.getElementById('cfProv').textContent = p.name;
     document.getElementById('cfProv2').textContent = p.name === 'Анна Петрова' ? 'Анне Петровой' : p.name;
     document.getElementById('cfSlot').textContent = state.slot + ' · 90 минут';
-    document.getElementById('cfDist').textContent = p.dist + ' от вас';
+    document.getElementById('cfDist').textContent = p.loc;
     go('g05');
   }
   function plan(will) {

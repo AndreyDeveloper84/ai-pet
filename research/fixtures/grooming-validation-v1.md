@@ -2,7 +2,7 @@
 
 **Status: TEST-ONLY RESEARCH FIXTURE.** НЕ production schema. НЕ domain model. НЕ данные реальных людей.
 **Build:** `GROOMING_VALIDATION_BUILD_V1` (`prototypes/grooming-validation-build-v1/index.html`)
-**Fixture version:** 1.0 · **Date:** 2026-09-03 · **Branch:** `agent/validation-ops` · **Base:** `281d429`
+**Fixture version:** 1.1 (C-06: candidates Анна Петрова / Мария / Ольга) · **Date:** 2026-09-03 · **Branch:** `agent/validation-ops` · **Base:** `281d429`
 **Participants:** P-01, P-03 (одинаковый build для обоих).
 **Источник frozen-спецификации:** задание владельца UX VALIDATION OPS AGENT (Owner Validation Wave 1, PET-13). Расхождения с ранними TEST_CANDIDATE-артефактами — в `../findings/validation-build-conflicts.md` (OPEN, не решены самовольно).
 
@@ -30,12 +30,14 @@
 - location: 1,2 км от владельца;
 - ближайшее окно: завтра 15:00.
 
-### Matching-only candidates (G02, НЕ canonical booking path)
+### Matching candidates (G02, fixture-only)
 
-Перенесены из прежнего TEST_CANDIDATE-прототипа (`prototypes/grooming-loop-low-fi/`), frozen fixture для них НЕ утверждён — см. конфликт C-06 в `../findings/validation-build-conflicts.md`:
+По решению владельца (C-06, RESOLVED): frozen TEST FIXTURE G02 = **Анна Петрова / Мария / Ольга**. Это НЕ утверждение о production marketplace; secondary business names/details — fixture-only, не product decisions.
 
 - Ольга · грумер, тревожные собаки — 2 800 ₽, 3,5 км;
-- Салон «Лапушка» — 2 500 ₽, 800 м.
+- Мария · грумер, выезд на дом — 3 000 ₽, у вас дома.
+
+Canonical booking path — Анна Петрова.
 
 ## BOOKING
 
