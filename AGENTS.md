@@ -100,3 +100,26 @@ Pet AI — персональный AI-ассистент владельца п�
 ## 10. Локализация артефактов
 
 Документация — на русском. Код, идентификаторы, API — на английском. Commit messages — conventional commits, английский.
+
+## 11. Agent Git Contract (параллельная работа агентов)
+
+Канонический remote: `origin` = https://github.com/AndreyDeveloper84/ai-pet.git.
+GitHub `main` всегда содержит принятую версию проекта.
+
+Каждый агент:
+
+1. работает только в своём worktree (`D:/Projects/pet-ai-wt/<name>`, ветка `agent/<name>`);
+2. коммитит только свою область;
+3. перед завершением делает self-review;
+4. push-ит свою ветку в GitHub;
+5. возвращает branch + commit SHA;
+6. НЕ merge-ит в main;
+7. НЕ force-push;
+8. НЕ переписывает чужую историю;
+9. НЕ меняет чужие agent branches.
+
+Shared control-plane files при параллельной работе по умолчанию READ ONLY:
+`AGENTS.md`, `PROJECT_STATE.md`, `docs/08-decisions/decision-log.md`, `docs/08-decisions/linear-backlog-plan.md`.
+Исключение — только если конкретная задача явно назначает изменение такого файла одному агенту.
+
+Интеграция в main выполняется отдельно после review: cherry-pick конкретных approved commits или reviewed PR/merge конкретной agent branch. Не интегрировать автоматически только потому, что агент закончил работу. После интеграции: `main` push → `origin/main`.
